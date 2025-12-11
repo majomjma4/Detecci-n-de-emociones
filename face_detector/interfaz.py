@@ -40,17 +40,54 @@ def abrir_camara():
     cam_window.title("Cámara - Detección de Emociones")
     ancho, alto = 800, 600
     centrar_ventana(cam_window, ancho, alto)
-    
-    canvas = tk.Canvas(cam_window, bg="black")
+    cam_window.configure(bg="#001C33")   # Azul oscuro elegante
+
+    # --- Canvas donde va el video ---
+    canvas = tk.Canvas(cam_window, bg="black", highlightthickness=0)
     canvas.pack(fill="both", expand=True)
 
-    # Función para cerrar cámara
-    def detener():
-        cap.release()
-        cam_window.destroy()
-        mostrar_inicio()
+    # --- Frame flotante superior (botón de regresar) ---
+    barra_superior = tk.Frame(cam_window, bg="#003B70", height=45)
+    barra_superior.place(relx=0, rely=0, relwidth=1)
 
-    # Función para tomar foto
+    btn_regresar = tk.Button(
+        barra_superior,
+        text="⟵",
+        font=("Arial", 18, "bold"),
+        bg="#003B70",
+        fg="white",
+        bd=0,
+        activebackground="#002F55",
+        activeforeground="white",
+        command=lambda:[cap.release(), cam_window.destroy(), mostrar_inicio()]
+    )
+    btn_regresar.pack(side="left", padx=10)
+
+    # --- Frame flotante inferior para botón de foto ---
+    barra_inferior = tk.Frame(cam_window, bg="", height=80)
+    barra_inferior.place(relx=0.5, rely=0.92, anchor="center")
+
+    # Botón redondo estilo cámara
+    btn_foto = tk.Button(
+        barra_inferior,
+        text="📷",
+        font=("Arial", 30),
+        bg="#000000",      # Verde del menú
+        fg="white",
+        bd=0,
+        relief="flat",
+        activebackground="#166b30",
+        width=3,
+        height=1,
+        command=lambda: tomar_foto()
+    )
+    btn_foto.pack()
+
+    # --- VARIABLES ---
+    cap = cv2.VideoCapture(0)
+    frame_global = None
+
+    # --- FUNCIONES INTERNAS ---
     def tomar_foto():
         if frame_global is not None:
             frame_guardar = frame_global.copy()
@@ -58,26 +95,14 @@ def abrir_camara():
             for (x, y, w_face, h_face) in faces:
                 rostro = frame_guardar[y:y+h_face, x:x+w_face]
                 emotion = detectar_emocion(rostro)
-                emotion_str = str(emotion).lower()
-                emotion_es = emociones_es.get(emotion_str, "Desconocido")
-                cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0, 255, 0), 2)
-                cv2.putText(frame_guardar, emotion_es, (x, y-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
+                cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
+                cv2.putText(frame_guardar, emotion_es, (x,y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"Galeria/foto_{timestamp}.png"
             cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
-            print(f"Foto guardada en {filename}")
-
-    # Barra superior de botones
-    barra = tk.Frame(cam_window, bg="#000000", height=40)
-    barra.place(relx=0, rely=0, relwidth=1)
-    btn_detener = ttk.Button(barra, text="Detener Cámara", command=detener)
-    btn_detener.pack(side="left", padx=5)
-    btn_foto = ttk.Button(barra, text="Tomar Foto", command=tomar_foto)
-    btn_foto.pack(side="left", padx=5)
-
-    cap = cv2.VideoCapture(0)
-    frame_global = None
 
     def mostrar_frame():
         nonlocal frame_global
@@ -90,17 +115,16 @@ def abrir_camara():
             for (x, y, w_face, h_face) in faces:
                 rostro = frame_rgb[y:y+h_face, x:x+w_face]
                 emotion = detectar_emocion(rostro)
-                emotion_str = str(emotion).lower()
-                emotion_es = emociones_es.get(emotion_str, "Desconocido")
-                cv2.rectangle(frame_rgb, (x, y), (x+w_face, y+h_face), (0, 255, 0), 2)
-                cv2.putText(frame_rgb, emotion_es, (x, y-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
+                cv2.rectangle(frame_rgb, (x,y), (x+w_face, y+h_face), (0,255,0), 2)
+                cv2.putText(frame_rgb, emotion_es, (x,y-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
 
-            # Ajustar a tamaño del canvas
-            canvas_w = canvas.winfo_width()
-            canvas_h = canvas.winfo_height()
-            frame_rgb_resized = cv2.resize(frame_rgb, (canvas_w, canvas_h))
-            img = Image.fromarray(frame_rgb_resized)
+            # Render al canvas
+            w = canvas.winfo_width()
+            h = canvas.winfo_height()
+            frame_resized = cv2.resize(frame_rgb, (w, h))
+            img = Image.fromarray(frame_resized)
             imgtk = ImageTk.PhotoImage(image=img)
             canvas.imgtk = imgtk
             canvas.create_image(0, 0, anchor="nw", image=imgtk)
