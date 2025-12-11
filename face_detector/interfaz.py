@@ -64,23 +64,35 @@ def abrir_camara():
     btn_regresar.pack(side="left", padx=10)
 
     # --- Frame flotante inferior para botón de foto ---
-    barra_inferior = tk.Frame(cam_window, bg="", height=80)
+    barra_inferior = tk.Frame(cam_window, bg="#000000", height=80)
     barra_inferior.place(relx=0.5, rely=0.92, anchor="center")
 
-    # Botón redondo estilo cámara
-    btn_foto = tk.Button(
-        barra_inferior,
-        text="📷",
-        font=("Arial", 30),
-        bg="#000000",      # Verde del menú
-        fg="white",
-        bd=0,
-        relief="flat",
-        activebackground="#166b30",
-        width=3,
-        height=1,
-        command=lambda: tomar_foto()
-    )
+    # Botón estilo cámara
+    
+    icono_img = Image.open("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/icono_camar.webp")  
+    icono_img = icono_img.resize((60, 60))         
+    icono = ImageTk.PhotoImage(icono_img)
+
+    # --- Canvas que simula botón redondo ---
+    btn_foto = tk.Canvas(barra_inferior, width=80, height=80, bg="#000000", highlightthickness=0)
+    btn_foto.pack()
+
+    # Dibujar círculo
+    circulo = btn_foto.create_oval(5, 5, 75, 75, fill="#F0EBEB", outline="#ffffff", width=2)
+
+    # Colocar icono en el centro
+    icono_id = btn_foto.create_image(40, 40, image=icono)
+
+    # Función clic
+    def click_btn(event):
+        tomar_foto()
+
+    btn_foto.tag_bind(circulo, "<Button-1>", click_btn)
+    btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
+
+    # Evitar que la imagen se borre por garbage collector
+    btn_foto.image = icono
+
     btn_foto.pack()
 
     # --- VARIABLES ---
@@ -246,7 +258,7 @@ titulo.grid(row=0, column=0, pady=20, sticky="n")
 IMG_ANCHO = 319  
 IMG_ALTO = 270    
 
-ruta_imagen = "C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/Codigo_Pis/img/logo_DS.jpg"
+ruta_imagen = "C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/logo_DS.jpg"
 
 frame_img = tk.Frame(root, bg="white")
 frame_img.grid(row=1, column=0, sticky="n", pady=10)
