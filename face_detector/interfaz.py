@@ -1,7 +1,8 @@
+
 import cv2
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageDraw
 from datetime import datetime
 from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
@@ -69,7 +70,7 @@ def abrir_camara():
 
     # Botón estilo cámara
     
-    icono_img = Image.open("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/icono_camar.webp")  
+    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/CODIGO_PIS/img/icono_camar.webp")  
     icono_img = icono_img.resize((60, 60))         
     icono = ImageTk.PhotoImage(icono_img)
 
@@ -268,15 +269,17 @@ def ver_fotos():
 
 # ---------------- Ventana inicial ----------------
 root = tk.Tk()
-centrar_ventana(root, 750, 500)
 root.title("Detección de Emociones en Tiempo Real")
-root.configure(bg="white")
+centrar_ventana(root, 750, 500)
 
-# Permitir que la ventana sea responsive
+# Configuración de filas y columnas para centrar y hacer responsive
 root.rowconfigure(0, weight=1)
-root.rowconfigure(1, weight=3)
-root.rowconfigure(2, weight=1)
+root.rowconfigure(1, weight=2)
+root.rowconfigure(2, weight=3)
+root.rowconfigure(3, weight=1)
 root.columnconfigure(0, weight=1)
+
+root.configure(bg="white")
 
 # ---------- ESTILOS ----------
 style = ttk.Style()
@@ -286,12 +289,14 @@ style.configure("Titulo.TLabel",
                 background="white",
                 foreground="#003B70",
                 font=("Arial", 24, "bold"),
-                anchor="center")  
+                anchor="center")
 
 style.configure("BotonVerde.TButton",
                 font=("Arial", 14, "bold"),
                 foreground="white",
-                padding=10)
+                padding=10,
+                borderwidth=1,
+                relief="raised")
 
 style.map("BotonVerde.TButton",
           background=[("!active", "#1B7F3A"), ("active", "#166b30")])
@@ -299,7 +304,9 @@ style.map("BotonVerde.TButton",
 style.configure("BotonAzul.TButton",
                 font=("Arial", 14, "bold"),
                 foreground="white",
-                padding=10)
+                padding=10,
+                borderwidth=1,
+                relief="raised")
 
 style.map("BotonAzul.TButton",
           background=[("!active", "#004C89"), ("active", "#003B70")])
@@ -308,47 +315,63 @@ style.map("BotonAzul.TButton",
 titulo = ttk.Label(root,
                    text="DETECCIÓN DE EMOCIONES EN TIEMPO REAL",
                    style="Titulo.TLabel")
-titulo.grid(row=0, column=0, pady=20, sticky="n")
+titulo.grid(row=0, column=0, pady=(20,5), sticky="n")
+
+# Línea debajo del título
+linea = tk.Frame(root, bg="#1B7F3A", height=2, width=500)
+linea.grid(row=0, column=0, pady=(55,0))
 
 # ---------- IMAGEN CENTRAL ----------
 IMG_ANCHO = 319  
 IMG_ALTO = 270    
-
-ruta_imagen = "C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/logo_DS.jpg"
+ruta_imagen = "C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/CODIGO_PIS/img/logo_DS.jpg"
 
 frame_img = tk.Frame(root, bg="white")
-frame_img.grid(row=1, column=0, sticky="n", pady=10)
+frame_img.grid(row=1, column=0, pady=(30,10))
 
 try:
     img = Image.open(ruta_imagen)
     img = img.resize((IMG_ANCHO, IMG_ALTO)) 
     img_tk = ImageTk.PhotoImage(img)
     label_img = tk.Label(frame_img, image=img_tk, bg="white")
-    label_img.pack()
+    label_img.pack(expand=True)
 except:
     label_img = tk.Label(frame_img,
                          text="(Aquí se mostrará tu imagen)",
                          bg="white",
                          fg="#003B70",
                          font=("Arial", 12))
-    label_img.pack()
+    label_img.pack(expand=True)
 
-# ---------- BOTONES ----------
+def crear_boton_redondo(frame, texto, color_fondo, color_texto, comando):
+    # Tamaño del botón
+    ancho, alto = 150, 50
+    # Crear imagen transparente
+    img = Image.new("RGBA", (ancho, alto), (0,0,0,0))
+    draw = ImageDraw.Draw(img)
+    # Dibujar rectángulo redondeado
+    draw.rounded_rectangle((0, 0, ancho, alto), radius=15, fill=color_fondo)
+    imgtk = ImageTk.PhotoImage(img)
+
+    # Crear botón con imagen
+    btn = tk.Button(frame, image=imgtk, text=texto, compound="center",
+                    font=("Arial",14,"bold"), fg=color_texto, bd=0,
+                    activebackground=color_fondo,
+                    command=comando)
+    btn.image = imgtk  # Evitar que lo borre el garbage collector
+    return btn
+
+# Reemplazar frame de botones
 frame_botones = tk.Frame(root, bg="white")
 frame_botones.grid(row=2, column=0, pady=20)
 
-btn_iniciar = ttk.Button(frame_botones, text="INICIAR",
-                         style="BotonVerde.TButton",
-                         command=lambda:[root.withdraw(),abrir_camara()])
+# Crear botones redondeados
+btn_iniciar = crear_boton_redondo(frame_botones, "INICIAR", "#1B7F3A", "white",
+                                  lambda:[root.withdraw(), abrir_camara()])
+btn_iniciar.pack(side="left", padx=30)
 
-btn_iniciar.grid(row=0, column=0, padx=30)
-
-btn_galeria = ttk.Button(frame_botones, text="GALERÍA",
-                         style="BotonAzul.TButton",
-                         command=lambda:[root.withdraw(),ver_fotos()])
-
-btn_galeria.grid(row=0, column=1, padx=30)
-
-
+btn_galeria = crear_boton_redondo(frame_botones, "GALERÍA", "#004C89", "white",
+                                  lambda:[root.withdraw(), ver_fotos()])
+btn_galeria.pack(side="left", padx=30)
 
 root.mainloop()
