@@ -69,7 +69,7 @@ def abrir_camara():
     barra_inferior = tk.Frame(cam_window, bg="#000000", height=80)
     barra_inferior.place(relx=0.5, rely=0.92, anchor="center")
 
-    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/CODIGO_PIS/img/icono_camar.webp")
+    icono_img = Image.open("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/icono_camar.webp")
     icono_img = icono_img.resize((60, 60))
     icono = ImageTk.PhotoImage(icono_img)
 
@@ -106,7 +106,7 @@ def abrir_camara():
             cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
 
             mostrar_mensaje(cam_window, "Foto guardada")
-            winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
+            winsound.PlaySound("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/sound/A-modern-camera-shutter-click.wav",
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
 
     # Mostrar frame
@@ -199,28 +199,48 @@ def ver_fotos():
 
     fotos = sorted(os.listdir("Galeria"))
     idx = [0]
+    ultimo_tamano = {"w": 0, "h": 0}
 
     # Mostrar la última foto por defecto al abrir la galería
     if fotos:
         idx[0] = len(fotos) - 1
 
     def mostrar_imagen():
+        w = canvas.winfo_width()
+        h = canvas.winfo_height()
+
+        # Evita redibujar si el tamaño no cambió
+        if ultimo_tamano["w"] == w and ultimo_tamano["h"] == h:
+            return
+
+        ultimo_tamano["w"] = w
+        ultimo_tamano["h"] = h
+
         canvas.delete("all")
+
         if fotos:
             foto_path = os.path.join("Galeria", fotos[idx[0]])
             img = Image.open(foto_path)
-            img.thumbnail((gal_window.winfo_width() - 100, gal_window.winfo_height() - 150))
+
+            # Ajustar imagen al tamaño del canvas
+            # Tamaño disponible
+            max_w = w - 20
+            max_h = h - 20
+
+            img_w, img_h = img.size
+            ratio = min(max_w / img_w, max_h / img_h)
+
+            new_size = (int(img_w * ratio), int(img_h * ratio))
+            img = img.resize(new_size, Image.LANCZOS)
+
             imgtk = ImageTk.PhotoImage(img)
 
-            # Mostrar imagen en el canvas centrada
             canvas.imgtk = imgtk
-            canvas.create_image(canvas.winfo_width() // 2, canvas.winfo_height() // 2, anchor="center", image=imgtk)
-
+            canvas.create_image(w // 2, h // 2, anchor="center", image=imgtk)
         else:
-            # Texto centrado si no hay fotos
             canvas.create_text(
-                canvas.winfo_width() // 2,
-                canvas.winfo_height() // 2,
+                w // 2,
+                h // 2,
                 text="No hay fotos guardadas",
                 fill="#003B70",
                 font=("Arial", 20, "bold")
@@ -245,7 +265,12 @@ def ver_fotos():
             if idx[0] >= len(fotos):
                 idx[0] = len(fotos) - 1
 
+            # FORZAR REDIBUJO
+            ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
+
             mostrar_imagen()
+
 
     # ---------------------- BOTONES INFERIORES ----------------------
     barra_botones = tk.Frame(gal_window, bg="white")
@@ -284,6 +309,7 @@ def ver_fotos():
     btn_borrar = ttk.Button(barra_botones, text="🗑 Borrar Foto", style="BotonVerde.TButton", command=borrar)
     btn_borrar.grid(row=0, column=2, padx=10)
 
+    canvas.bind("<Configure>", lambda e: mostrar_imagen())
 
     gal_window.after(100,mostrar_imagen)
 
@@ -397,7 +423,7 @@ linea.pack(fill="x", padx=90, pady=(0, 10))
 IMG_BASE_W = 319
 IMG_BASE_H = 270
 
-ruta_imagen = "C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto PIS/CODIGO_PIS/img/logo_DS.png"
+ruta_imagen = "C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/logo_DS.png"
 
 frame_img = tk.Frame(root, bg="#CFEFFF")
 frame_img.pack(pady=10)
