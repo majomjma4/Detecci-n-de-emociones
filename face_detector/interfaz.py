@@ -149,28 +149,79 @@ def abrir_camara():
 def ver_fotos():
     gal_window = tk.Toplevel()
     gal_window.title("Galería de Fotos")
-    ancho, alto = 800, 600
+    ancho, alto = 900, 650
     centrar_ventana(gal_window, ancho, alto)
+    gal_window.configure(bg="white")
 
-    canvas = tk.Canvas(gal_window, bg="gray")
-    canvas.pack(fill="both", expand=True)
+    # ---------------------- BARRA SUPERIOR ----------------------
+    barra_superior = tk.Frame(gal_window, bg="#003B70", height=60)
+    barra_superior.pack(fill="x", side="top")
+
+    btn_regresar = tk.Button(
+        barra_superior,
+        text="⟵  Regresar",
+        font=("Arial", 14, "bold"),
+        bg="#003B70",
+        fg="white",
+        activebackground="#002F55",
+        activeforeground="white",
+        bd=0,
+        command=lambda:[gal_window.destroy(), mostrar_inicio()]
+    )
+    btn_regresar.pack(side="left", padx=15, pady=10)
+
+    # Frame central para EL TÍTULO
+    frame_titulo = tk.Frame(barra_superior, bg="#003B70")
+    frame_titulo.pack(expand=True, fill="both")
+
+    titulo = tk.Label(
+        frame_titulo,
+        text="GALERÍA DE FOTOS",
+        bg="#003B70",
+        fg="white",
+        font=("Arial", 18, "bold")
+    )
+    titulo.pack(expand=True)
+
+
+    # ---------------------- CANVAS CENTRAL ----------------------
+    canvas_frame = tk.Frame(gal_window, bg="white")
+    canvas_frame.pack(expand=True, fill="both")
+
+    canvas = tk.Canvas(canvas_frame, bg="#F2F2F2", highlightthickness=0)
+    canvas.pack(expand=True, fill="both", padx=20, pady=20)
 
     fotos = sorted(os.listdir("Galeria"))
-    idx = [0]  # índice actual
+    idx = [0]
 
     def mostrar_imagen():
         canvas.delete("all")
         if fotos:
             foto_path = os.path.join("Galeria", fotos[idx[0]])
             img = Image.open(foto_path)
-            img.thumbnail((gal_window.winfo_width(), gal_window.winfo_height()))
+            img.thumbnail((gal_window.winfo_width()-100, gal_window.winfo_height()-150))
             imgtk = ImageTk.PhotoImage(img)
-            canvas.imgtk = imgtk
-            canvas.create_image(gal_window.winfo_width()//2, gal_window.winfo_height()//2,
-                                anchor="center", image=imgtk)
+
+            def mostrar_texto_centrado():
+                canvas.delete("all")
+                canvas.create_text(
+                    canvas.winfo_width()//2,
+                    canvas.winfo_height()//2,
+                    text="No hay fotos guardadas",
+                    fill="#003B70",
+                    font=("Arial", 20, "bold")
+                )
+
+            canvas.after(50, mostrar_texto_centrado)
+
         else:
-            label = ttk.Label(canvas, text="No hay fotos guardadas aún")
-            label.pack(pady=20)
+            canvas.create_text(
+                canvas.winfo_width()//2,
+                canvas.winfo_height()//2,
+                text="No hay fotos guardadas",
+                fill="#003B70",
+                font=("Arial", 20, "bold")
+            )
 
     def siguiente():
         if fotos:
@@ -186,29 +237,34 @@ def ver_fotos():
         if fotos:
             foto_path = os.path.join("Galeria", fotos[idx[0]])
             os.remove(foto_path)
-            print(f"Foto {fotos[idx[0]]} borrada")
             fotos.pop(idx[0])
+
             if idx[0] >= len(fotos):
                 idx[0] = len(fotos) - 1
+
             mostrar_imagen()
 
-    def regresar():
-        gal_window.destroy()
-        mostrar_inicio()
+    # ---------------------- BOTONES INFERIORES ----------------------
+    barra_botones = tk.Frame(gal_window, bg="white")
+    barra_botones.pack(side="bottom", pady=10)
 
-    # Botones
-    barra = tk.Frame(gal_window, bg="#000000", height=40)
-    barra.pack(side="bottom", fill="x")
-    btn_prev = ttk.Button(barra, text="Anterior", command=anterior)
-    btn_prev.pack(side="left", padx=5, pady=5)
-    btn_next = ttk.Button(barra, text="Siguiente", command=siguiente)
-    btn_next.pack(side="left", padx=5, pady=5)
-    btn_borrar = ttk.Button(barra, text="Borrar Foto", command=borrar)
-    btn_borrar.pack(side="left", padx=5, pady=5)
-    btn_regresar = ttk.Button(barra, text="Regresar", command=regresar)
-    btn_regresar.pack(side="right", padx=5, pady=5)
+    estilo_btn = {
+        "font": ("Arial", 13, "bold"),
+        "width": 14,
+        "padding": 10
+    }
+
+    btn_prev = ttk.Button(barra_botones, text="⟵ Anterior", style="BotonAzul.TButton", command=anterior)
+    btn_prev.grid(row=0, column=0, padx=10)
+
+    btn_next = ttk.Button(barra_botones, text="Siguiente ⟶", style="BotonAzul.TButton", command=siguiente)
+    btn_next.grid(row=0, column=1, padx=10)
+
+    btn_borrar = ttk.Button(barra_botones, text="🗑 Borrar Foto", style="BotonVerde.TButton", command=borrar)
+    btn_borrar.grid(row=0, column=2, padx=10)
 
     mostrar_imagen()
+
 
 # ---------------- Ventana inicial ----------------
 root = tk.Tk()
