@@ -1,4 +1,3 @@
-
 import cv2
 import tkinter as tk
 from tkinter import ttk
@@ -6,6 +5,7 @@ from PIL import Image, ImageTk, ImageDraw
 from datetime import datetime
 from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
+from detectar_genero import detectar_genero 
 import os
 import winsound
 
@@ -84,6 +84,46 @@ def abrir_camara():
     btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
     btn_foto.image = icono
 
+    # Barra lateral derecha
+    barra_genero = tk.Frame(cam_window, bg="#003B70", width=220)
+    barra_genero.place(relx=1, rely=0, anchor="ne", relheight=1)
+
+    titulo_genero = tk.Label(
+        barra_genero,
+        text="DETECTAR GÉNERO:",
+        bg="#003B70",
+        fg="white",
+        font=("Arial", 12, "bold")
+    )
+    titulo_genero.pack(pady=(60, 15))
+
+    btn_genero = tk.Label(
+        barra_genero,
+        text="DESACTIVADO",
+        bg="#B00020",
+        fg="white",
+        font=("Arial", 11, "bold"),
+        width=14,
+        height=2,
+        cursor="hand2"
+    )
+    btn_genero.pack()
+
+    # -------------función para Activa/Desactivar ------------
+
+    def toggle_genero(event=None):
+        nonlocal detectar_genero_activo
+        detectar_genero_activo = not detectar_genero_activo
+
+        if detectar_genero_activo:
+            btn_genero.config(text="ACTIVADO", bg="#1FAA00")
+        else:
+            btn_genero.config(text="DESACTIVADO", bg="#B00020")
+
+    btn_genero.bind("<Button-1>", toggle_genero)
+
+
+
     # Variables
     cap = cv2.VideoCapture(0)
     frame_global = None
@@ -95,11 +135,35 @@ def abrir_camara():
             faces = detectar_caras(frame_guardar)
             for (x, y, w_face, h_face) in faces:
                 rostro = frame_guardar[y:y+h_face, x:x+w_face]
+
+                # --- EMOCIÓN (SIEMPRE) ---
                 emotion = detectar_emocion(rostro)
                 emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
+
                 cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
-                cv2.putText(frame_guardar, emotion_es, (x,y-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+
+                cv2.putText(
+                    frame_guardar,
+                    emotion_es,
+                    (x, y - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9,
+                    (0,255,0),
+                    2
+                )
+
+                # --- GÉNERO (SOLO SI ESTÁ ACTIVADO) ---
+                if detectar_genero_activo:
+                    genero = detectar_genero(rostro)
+                    cv2.putText(
+                        frame_guardar,
+                        genero,
+                        (x, y + h_face + 25),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (0,255,0),
+                        2
+                    )
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"Galeria/foto_{timestamp}.png"
@@ -108,6 +172,12 @@ def abrir_camara():
             mostrar_mensaje(cam_window, "Foto guardada")
             winsound.PlaySound("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/sound/A-modern-camera-shutter-click.wav",
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
+            
+
+    # Activador de la función género
+
+    detectar_genero_activo = False
+
 
     # Mostrar frame
     def mostrar_frame():
@@ -120,11 +190,26 @@ def abrir_camara():
             faces = detectar_caras(frame_rgb)
             for (x, y, w_face, h_face) in faces:
                 rostro = frame_rgb[y:y+h_face, x:x+w_face]
+
+
                 emotion = detectar_emocion(rostro)
                 emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
                 cv2.rectangle(frame_rgb, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
                 cv2.putText(frame_rgb, emotion_es, (x, y-10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+                
+                # --- GÉNERO (SOLO SI ESTÁ ACTIVADO) ---
+                if detectar_genero_activo:
+                    genero = detectar_genero(rostro)
+                    cv2.putText(
+                        frame_rgb,
+                        genero,
+                        (x, y + h_face + 25),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.9,
+                        (0,255,0),
+                        2
+                    )
 
             # Escalar proporcionalmente solo dentro de la zona izquierda (70% ancho)
             canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
@@ -275,6 +360,9 @@ def ver_fotos():
     # ---------------------- BOTONES INFERIORES ----------------------
     barra_botones = tk.Frame(gal_window, bg="white")
     barra_botones.pack(side="bottom", pady=15)
+
+    style = ttk.Style(gal_window)
+    style.theme_use("clam")
 
     # ESTILOS PARA BOTONES
     style.configure("BotonAzul.TButton",
