@@ -215,6 +215,9 @@ def abrir_camara():
         canvas.after(10, mostrar_frame)
 
     mostrar_frame()
+
+    cam_window.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
+
     
 
 # ---------------- Galería de fotos ----------------
@@ -395,6 +398,9 @@ def ver_fotos():
     canvas.bind("<Configure>", lambda e: mostrar_imagen())
 
     gal_window.after(100,mostrar_imagen)
+    
+    gal_window.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
+
 
 
 # ---------- FUNCIONES ----------
