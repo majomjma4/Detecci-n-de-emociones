@@ -9,6 +9,8 @@ from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
 from detectar_genero import detectar_genero
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suprimir mensajes de TensorFlow
+
 # Diccionario de traducción
 emociones_es = {
     "anger": "Enojado",
@@ -33,6 +35,7 @@ def centrar_ventana(win, ancho, alto):
 
 # ---------- Ventana de cámara ----------
 def abrir_camara():
+    global cap 
     cam_window = tk.Toplevel()
     cam_window.title("Cámara - Detección de Emociones")
     ancho, alto = 900, 600
@@ -51,7 +54,7 @@ def abrir_camara():
 
     btn_regresar = tk.Button(
         barra_superior,
-        text="⟵",
+        text="⟵ Regresar",
         font=("Arial", 18, "bold"),
         bg="#003B70",
         fg="white",
@@ -216,9 +219,16 @@ def abrir_camara():
 
     mostrar_frame()
 
-    cam_window.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
+    def cerrar_camara_total():
+        global cap
+        if cap is not None and cap.isOpened():
+            cap.release()  # Liberar cámara
+            cap = None
+        cam_window.destroy()  # Cierra la ventana de la cámara
+        root.destroy()        # Cierra la ventana principal y termina el programa
 
-    
+    cam_window.protocol("WM_DELETE_WINDOW", cerrar_camara_total)
+
 
 # ---------------- Galería de fotos ----------------
 def ver_fotos():
@@ -245,7 +255,7 @@ def ver_fotos():
     )
     btn_regresar.pack(side="left", padx=15, pady=10)
 
-    # Frame central para EL TÍTULO
+   # Frame central para EL TÍTULO
     frame_titulo = tk.Frame(barra_superior, bg="#003B70")
     frame_titulo.pack(expand=True, fill="both")
 
@@ -256,7 +266,19 @@ def ver_fotos():
         fg="white",
         font=("Arial", 18, "bold")
     )
-    titulo.pack(expand=True)
+
+    # Proporción inicial: 190 px / 900 px
+    x_proporcion = 190 / 900
+    titulo.place(x=int(x_proporcion * 900), rely=0.5, anchor="w")  # posición inicial
+
+    # Función para actualizar posición al cambiar tamaño de la ventana
+    def actualizar_posicion_titulo(event=None):
+        ancho_actual = gal_window.winfo_width()  # ancho de la ventana
+        x = int(x_proporcion * ancho_actual)
+        titulo.place(x=x, rely=0.5, anchor="w")
+
+    # Vincular al redimensionamiento de la ventana
+    gal_window.bind("<Configure>", actualizar_posicion_titulo)
 
     # ---------------------- CANVAS CENTRAL ----------------------
     canvas_frame = tk.Frame(gal_window, bg="white")
