@@ -1,13 +1,13 @@
 import cv2
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk, ImageDraw
+from PIL import Image, ImageTk
 from datetime import datetime
-from detectar_caras import detectar_caras
-from detectar_emociones import detectar_emocion
-from detectar_genero import detectar_genero 
 import os
 import winsound
+from detectar_caras import detectar_caras
+from detectar_emociones import detectar_emocion
+from detectar_genero import detectar_genero
 
 # Diccionario de traducción
 emociones_es = {
@@ -20,15 +20,10 @@ emociones_es = {
     "surprise": "Sorprendido"
 }
 
-# Carpeta para guardar fotos
 if not os.path.exists("Galeria"):
     os.makedirs("Galeria")
 
-# ---------------- Función para ventana principal ----------------
-def mostrar_inicio():
-    root.deiconify()   
-
-# ---------------- Función para centrar ventana ----------------
+# ---------- Función centrar ventana ----------
 def centrar_ventana(win, ancho, alto):
     screen_w = win.winfo_screenwidth()
     screen_h = win.winfo_screenheight()
@@ -36,17 +31,23 @@ def centrar_ventana(win, ancho, alto):
     y = int((screen_h - alto) / 2)
     win.geometry(f"{ancho}x{alto}+{x}+{y}")
 
-# ---------------- Ventana de cámara ----------------
+# ---------- Ventana de cámara ----------
 def abrir_camara():
     cam_window = tk.Toplevel()
     cam_window.title("Cámara - Detección de Emociones")
-    ancho, alto = 800, 600
+    ancho, alto = 900, 600
     centrar_ventana(cam_window, ancho, alto)
-    cam_window.configure(bg="#001C33")
+    cam_window.configure(bg="#1E1E1E")  # fondo gris oscuro
 
-    # Barra superior
+    # Barra superior azul
     barra_superior = tk.Frame(cam_window, bg="#003B70", height=45)
     barra_superior.pack(side="top", fill="x")
+
+    def regresar():
+        if cap.isOpened():
+            cap.release()           # cerrar cámara
+        cam_window.destroy()       # cerrar ventana cámara
+        root.deiconify()           # volver a ventana principal
 
     btn_regresar = tk.Button(
         barra_superior,
@@ -57,26 +58,20 @@ def abrir_camara():
         bd=0,
         activebackground="#002F55",
         activeforeground="white",
-        command=lambda:[cap.release(), cam_window.destroy(), root.deiconify()]
+        command=regresar
     )
     btn_regresar.pack(side="left", padx=10, pady=5)
 
-    # Contenedor central (canvas + barra lateral derecha)
-    contenedor_central = tk.Frame(cam_window, bg="#001C33")
-    contenedor_central.pack(side="top", fill="both", expand=True)
-
-    # Canvas principal (zona de cámara)
-    canvas = tk.Canvas(contenedor_central, bg="black", highlightthickness=0)
-    canvas.pack(side="left", fill="both", expand=True)
-
+    # ---------- Abrimos la cámara ----------
+    cap = cv2.VideoCapture(0)
     # Barra lateral derecha
-    barra_genero = tk.Frame(contenedor_central, bg="#000000", width=220)
+    barra_genero = tk.Frame(cam_window, bg="#2B2B2B", width=220)
     barra_genero.pack(side="right", fill="y")
 
     titulo_genero = tk.Label(
         barra_genero,
         text="DETECTAR GÉNERO:",
-        bg="#000000",
+        bg="#2B2B2B",
         fg="white",
         font=("Arial", 12, "bold")
     )
@@ -86,155 +81,141 @@ def abrir_camara():
         barra_genero,
         text="DESACTIVADO",
         bg="#B00020",
-        fg="white",
+        fg="black",
         font=("Arial", 11, "bold"),
         width=14,
         height=2,
         cursor="hand2"
     )
-    btn_genero.pack()
+    btn_genero.pack(pady=5)
 
-    # Botón de la cámara sobre el canvas
-    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/img/icono_camar.webp")
-    icono_img = icono_img.resize((60, 60))
-    icono = ImageTk.PhotoImage(icono_img)
-
-    btn_foto = tk.Canvas(canvas, width=80, height=80, bg="black", highlightthickness=0)
-    btn_foto.place(relx=0.5, rely=0.92, anchor="center")  # centrado abajo
-    circulo = btn_foto.create_oval(5,5,75,75, fill="#F0EBEB", outline="#ffffff", width=2)
-    icono_id = btn_foto.create_image(40,40, image=icono)
-
-    def click_btn(event):
-        tomar_foto()
-    btn_foto.tag_bind(circulo, "<Button-1>", click_btn)
-    btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
-    btn_foto.image = icono
-
-    # Activador de la función género
     detectar_genero_activo = False
+
+    # Colores
+    color_activado = "#1FAA00"
+    color_activado_hover = "#9af58a"  # un verde más oscuro
+    color_desactivado = "#B00020"
+    color_desactivado_hover = "#FE9AAB"  # rojo más oscuro
 
     def toggle_genero(event=None):
         nonlocal detectar_genero_activo
         detectar_genero_activo = not detectar_genero_activo
         if detectar_genero_activo:
-            btn_genero.config(text="ACTIVADO", bg="#1FAA00")
+            btn_genero.config(text="ACTIVADO", bg=color_activado)
         else:
-            btn_genero.config(text="DESACTIVADO", bg="#B00020")
+            btn_genero.config(text="DESACTIVADO", bg=color_desactivado)
+
+    def on_enter(event):
+        if detectar_genero_activo:
+            btn_genero.config(bg=color_activado_hover)
+        else:
+            btn_genero.config(bg=color_desactivado_hover)
+
+    def on_leave(event):
+        if detectar_genero_activo:
+            btn_genero.config(bg=color_activado)
+        else:
+            btn_genero.config(bg=color_desactivado)
 
     btn_genero.bind("<Button-1>", toggle_genero)
+    btn_genero.bind("<Enter>", on_enter)
+    btn_genero.bind("<Leave>", on_leave)
 
-    # Variables
+
+    # Canvas central para cámara
+    canvas_frame = tk.Frame(cam_window, bg="#1E1E1E")
+    canvas_frame.pack(expand=True, fill="both", side="left")
+    canvas = tk.Canvas(canvas_frame, bg="#1E1E1E", highlightthickness=0)
+    canvas.pack(expand=True, fill="both")
+
+    # Barra inferior con botón de foto
+    barra_inferior = tk.Frame(canvas_frame, bg="#1E1E1E", height=80)
+    barra_inferior.place(relx=0.5, rely=0.95, anchor="s")
+
+    # Abrimos y redimensionamos el ícono
+    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/img/icono_camar.webp").resize((50,50))
+    icono = ImageTk.PhotoImage(icono_img)
+
+    # Botón de cámara completamente redondo
+    btn_size = 80
+    circulo_size = 70
+    btn_foto = tk.Canvas(barra_inferior, width=btn_size, height=btn_size, bg="#1E1E1E", highlightthickness=0)
+    btn_foto.pack()
+    padding = (btn_size - circulo_size)//2
+    circulo = btn_foto.create_oval(padding, padding, padding+circulo_size, padding+circulo_size, fill="#F0EBEB", outline="#ffffff", width=2)
+    icono_id = btn_foto.create_image(btn_size//2, btn_size//2, image=icono)
+    btn_foto.image = icono
+
+    def click_btn(event):
+        tomar_foto()
+    btn_foto.tag_bind(circulo, "<Button-1>", click_btn)
+    btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
+
+    # ---------- Cámara ----------
     cap = cv2.VideoCapture(0)
     frame_global = None
 
-    # Tomar foto
     def tomar_foto():
         if frame_global is not None:
             frame_guardar = frame_global.copy()
             faces = detectar_caras(frame_guardar)
             for (x, y, w_face, h_face) in faces:
                 rostro = frame_guardar[y:y+h_face, x:x+w_face]
-
-                # --- EMOCIÓN (SIEMPRE) ---
                 emotion = detectar_emocion(rostro)
                 emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
-
                 cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
-
-                cv2.putText(
-                    frame_guardar,
-                    emotion_es,
-                    (x, y - 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.9,
-                    (0,255,0),
-                    2
-                )
-
-                # --- GÉNERO (SOLO SI ESTÁ ACTIVADO) ---
+                cv2.putText(frame_guardar, emotion_es, (x, y-30),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
                 if detectar_genero_activo:
                     genero = detectar_genero(rostro)
-                    cv2.putText(
-                        frame_guardar,
-                        genero,
-                        (x, y + h_face + 25),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.8,
-                        (0,255,0),
-                        2
-                    )
-
+                    cv2.putText(frame_guardar, genero, (x, y+h_face+25),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"Galeria/foto_{timestamp}.png"
             cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
-
-            mostrar_mensaje(cam_window, "Foto guardada")
             winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
-                               winsound.SND_FILENAME | winsound.SND_ASYNC)
+                            winsound.SND_FILENAME | winsound.SND_ASYNC)
             
-
-    # Activador de la función género
-
-    detectar_genero_activo = False
+            # Agregar esta línea para mostrar el mensaje en la parte inferior izquierda
+            mostrar_mensaje(cam_window, "Foto guardada con éxito", 10000)  # Mostrar el mensaje por 10 segundos
 
 
-    # Mostrar frame
+    # Mostrar frame adaptativo
     def mostrar_frame():
         nonlocal frame_global
         ret, frame = cap.read()
         if ret:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_global = frame_rgb.copy()
-
-            faces = detectar_caras(frame_rgb)
-            for (x, y, w_face, h_face) in faces:
+            # Dibujar caras y emociones
+            for (x, y, w_face, h_face) in detectar_caras(frame_rgb):
                 rostro = frame_rgb[y:y+h_face, x:x+w_face]
-
-
                 emotion = detectar_emocion(rostro)
                 emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
                 cv2.rectangle(frame_rgb, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
                 cv2.putText(frame_rgb, emotion_es, (x, y-10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
-                
-                # --- GÉNERO (SOLO SI ESTÁ ACTIVADO) ---
                 if detectar_genero_activo:
                     genero = detectar_genero(rostro)
-                    cv2.putText(
-                        frame_rgb,
-                        genero,
-                        (x, y + h_face + 25),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.9,
-                        (0,255,0),
-                        2
-                    )
-
-            # Escalar proporcionalmente solo dentro de la zona izquierda (70% ancho)
+                    cv2.putText(frame_rgb, genero, (x, y+h_face+25),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+            # Escalar proporcionalmente al canvas
             canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
             if canvas_w < 1 or canvas_h < 1:
-                # Esperar un poco hasta que el canvas tenga tamaño válido
                 cam_window.after(50, mostrar_frame)
                 return
-
-            video_w = int(canvas_w * 0.7)  
             frame_h, frame_w = frame_rgb.shape[:2]
             scale = min(canvas_w/frame_w, canvas_h/frame_h)
-            new_w, new_h = max(1,int(frame_w*scale)), max(1,int(frame_h*scale))  # evitar cero
+            new_w, new_h = max(1,int(frame_w*scale)), max(1,int(frame_h*scale))
             frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
-
-
-            img = Image.fromarray(frame_resized)
-            imgtk = ImageTk.PhotoImage(img)
+            imgtk = ImageTk.PhotoImage(Image.fromarray(frame_resized))
             canvas.imgtk = imgtk
-
-            # Limpiar canvas y centrar
-            canvas.delete("VIDEO")
-            canvas.create_image(canvas_w//2, canvas_h//2, image=imgtk, anchor="center", tags="VIDEO")
-
+            canvas.delete("all")
+            canvas.create_image(canvas_w//2, canvas_h//2, image=imgtk, anchor="center")
         canvas.after(10, mostrar_frame)
 
     mostrar_frame()
+    
 
 # ---------------- Galería de fotos ----------------
 def ver_fotos():
