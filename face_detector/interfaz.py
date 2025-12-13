@@ -278,25 +278,26 @@ def ver_fotos():
 
     # ESTILOS PARA BOTONES
     style.configure("BotonAzul.TButton",
-                    background="#0389F6",    # Azul brillante
-                    foreground="white",
+                    background="#319BF1",    
+                    foreground="black",
                     font=("Arial", 13, "bold"),
                     borderwidth=0,
                     focusthickness=3,
                     focuscolor='none',
                     padding=8)
     style.map("BotonAzul.TButton",
-              background=[("active", "#0264C8")],  # Más oscuro al pasar mouse
-              foreground=[("active", "white")])
+              background=[("active", "#75B3F1")],  
+              foreground=[("active", "black")])
 
     style.configure("BotonVerde.TButton",
-                    background="#00FF51",    # Verde brillante
+                    background="#58F389",    
                     foreground="black",
                     font=("Arial", 13, "bold"),
                     borderwidth=0,
                     padding=8)
+    
     style.map("BotonVerde.TButton",
-              background=[("active", "#00CC3D")],  # Verde oscuro al pasar mouse
+              background=[("active", "#7EE69D")],  
               foreground=[("active", "black")])
 
     # BOTONES
@@ -356,12 +357,46 @@ def shade_color(color, factor):
     return f"#{r:02x}{g:02x}{b:02x}"
 
 # ---------- BOTÓN REDONDO ----------
-def crear_boton_redondo(parent, texto, bg_color, fg_color, comando):
+def crear_boton_redondo(parent, texto, bg_color, fg_color,
+                        hover_color, active_color, comando):
+
     canvas = tk.Canvas(parent, highlightthickness=0, bg=parent["bg"], bd=0)
+
     canvas.texto = texto
     canvas.color_bg = bg_color
     canvas.color_fg = fg_color
     canvas.comando = comando
+
+    # 🎨 colores hover / click
+    canvas.hover_bg = hover_color
+    canvas.active_bg = active_color
+
+    # Estado actual
+    canvas.current_bg = bg_color
+
+    # -------- EVENTOS --------
+    def on_enter(e):
+        canvas.current_bg = canvas.hover_bg
+        dibujar_boton(canvas, 1)
+
+    def on_leave(e):
+        canvas.current_bg = canvas.color_bg
+        dibujar_boton(canvas, 1)
+
+    def on_click(e):
+        canvas.current_bg = canvas.active_bg
+        dibujar_boton(canvas, 1)
+        canvas.comando()
+
+    def on_release(e):
+        canvas.current_bg = canvas.hover_bg
+        dibujar_boton(canvas, 1)
+
+    canvas.bind("<Enter>", on_enter)
+    canvas.bind("<Leave>", on_leave)
+    canvas.bind("<Button-1>", on_click)
+    canvas.bind("<ButtonRelease-1>", on_release)
+
     return canvas
 
 def dibujar_boton(canvas, escala):
@@ -375,7 +410,7 @@ def dibujar_boton(canvas, escala):
     canvas.config(width=ancho, height=alto)
 
     x0, y0, x1, y1 = 0, 0, ancho, alto
-    color = canvas.color_bg
+    color = canvas.current_bg
 
     canvas.create_rectangle(x0+radio, y0, x1-radio, y1, fill=color, outline="")
     canvas.create_rectangle(x0, y0+radio, x1, y1-radio, fill=color, outline="")
@@ -440,13 +475,17 @@ label_img.pack()
 frame_botones = tk.Frame(root, bg="#CFEFFF")
 frame_botones.pack(pady=20)
 
-btn_iniciar = crear_boton_redondo(frame_botones, "INICIAR", "#00FF51", "black",
+btn_iniciar = crear_boton_redondo(frame_botones, "INICIAR", "#69E991", "black", "#97E0AE", "#69B4F1",
                                   lambda: (root.withdraw(), abrir_camara()))
+                                                        
 btn_iniciar.pack(side="left", padx=10)
+dibujar_boton(btn_iniciar, 1)
 
-btn_galeria = crear_boton_redondo(frame_botones, "GALERÍA", "#0389F6", "black",
+btn_galeria = crear_boton_redondo(frame_botones, "GALERÍA", "#69B4F1", "black", "#A2C2DD", "#69B4F1",
                                   lambda: (root.withdraw(), ver_fotos()))
 btn_galeria.pack(side="left", padx=10)
+dibujar_boton(btn_galeria,1)
+
 
 # ---------- RESPONSIVE OPTIMIZADO ----------
 pending = None

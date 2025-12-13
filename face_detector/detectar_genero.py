@@ -1,24 +1,19 @@
+import os
 import cv2
 import numpy as np
-import os
 from keras.models import load_model
-
-# ===============================
-# Cargar modelo de género
-# ===============================
-MODEL_PATH = "gender_mini_XCEPTION.21-0.95.hdf5"
-genero_model = load_model(MODEL_PATH, compile=False)
 
 # Etiquetas del modelo
 GENERO_LABELS = ["Femenino", "Masculino"]
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+from pathlib import Path
 
-MODEL_PATH = os.path.join(
-    BASE_DIR,
-    "models",
-    "gender_mini_XCEPTION.21-0.95.hdf5"
-)
+BASE_DIR = Path(__file__).resolve().parent
+
+MODEL_PATH = BASE_DIR / "models" / "gender_mini_XCEPTION.21-0.95.hdf5"
+
+print("MODEL PATH:", MODEL_PATH)
+
 
 genero_model = load_model(MODEL_PATH, compile=False)
 
