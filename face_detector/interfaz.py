@@ -44,13 +44,9 @@ def abrir_camara():
     centrar_ventana(cam_window, ancho, alto)
     cam_window.configure(bg="#001C33")
 
-    # Canvas principal
-    canvas = tk.Canvas(cam_window, bg="black", highlightthickness=0)
-    canvas.pack(fill="both", expand=True)
-
     # Barra superior
     barra_superior = tk.Frame(cam_window, bg="#003B70", height=45)
-    barra_superior.place(relx=0, rely=0, relwidth=1)
+    barra_superior.pack(side="top", fill="x")
 
     btn_regresar = tk.Button(
         barra_superior,
@@ -63,35 +59,24 @@ def abrir_camara():
         activeforeground="white",
         command=lambda:[cap.release(), cam_window.destroy(), root.deiconify()]
     )
-    btn_regresar.pack(side="left", padx=10)
+    btn_regresar.pack(side="left", padx=10, pady=5)
 
-    # Barra inferior con botón de foto
-    barra_inferior = tk.Frame(cam_window, bg="#000000", height=80)
-    barra_inferior.place(relx=0.5, rely=0.92, anchor="center")
+    # Contenedor central (canvas + barra lateral derecha)
+    contenedor_central = tk.Frame(cam_window, bg="#001C33")
+    contenedor_central.pack(side="top", fill="both", expand=True)
 
-    icono_img = Image.open("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/icono_camar.webp")
-    icono_img = icono_img.resize((60, 60))
-    icono = ImageTk.PhotoImage(icono_img)
-
-    btn_foto = tk.Canvas(barra_inferior, width=80, height=80, bg="#000000", highlightthickness=0)
-    btn_foto.pack()
-    circulo = btn_foto.create_oval(5,5,75,75, fill="#F0EBEB", outline="#ffffff", width=2)
-    icono_id = btn_foto.create_image(40,40, image=icono)
-
-    def click_btn(event):
-        tomar_foto()
-    btn_foto.tag_bind(circulo, "<Button-1>", click_btn)
-    btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
-    btn_foto.image = icono
+    # Canvas principal (zona de cámara)
+    canvas = tk.Canvas(contenedor_central, bg="black", highlightthickness=0)
+    canvas.pack(side="left", fill="both", expand=True)
 
     # Barra lateral derecha
-    barra_genero = tk.Frame(cam_window, bg="#003B70", width=220)
-    barra_genero.place(relx=1, rely=0, anchor="ne", relheight=1)
+    barra_genero = tk.Frame(contenedor_central, bg="#000000", width=220)
+    barra_genero.pack(side="right", fill="y")
 
     titulo_genero = tk.Label(
         barra_genero,
         text="DETECTAR GÉNERO:",
-        bg="#003B70",
+        bg="#000000",
         fg="white",
         font=("Arial", 12, "bold")
     )
@@ -109,20 +94,34 @@ def abrir_camara():
     )
     btn_genero.pack()
 
-    # -------------función para Activa/Desactivar ------------
+    # Botón de la cámara sobre el canvas
+    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/img/icono_camar.webp")
+    icono_img = icono_img.resize((60, 60))
+    icono = ImageTk.PhotoImage(icono_img)
+
+    btn_foto = tk.Canvas(canvas, width=80, height=80, bg="black", highlightthickness=0)
+    btn_foto.place(relx=0.5, rely=0.92, anchor="center")  # centrado abajo
+    circulo = btn_foto.create_oval(5,5,75,75, fill="#F0EBEB", outline="#ffffff", width=2)
+    icono_id = btn_foto.create_image(40,40, image=icono)
+
+    def click_btn(event):
+        tomar_foto()
+    btn_foto.tag_bind(circulo, "<Button-1>", click_btn)
+    btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
+    btn_foto.image = icono
+
+    # Activador de la función género
+    detectar_genero_activo = False
 
     def toggle_genero(event=None):
         nonlocal detectar_genero_activo
         detectar_genero_activo = not detectar_genero_activo
-
         if detectar_genero_activo:
             btn_genero.config(text="ACTIVADO", bg="#1FAA00")
         else:
             btn_genero.config(text="DESACTIVADO", bg="#B00020")
 
     btn_genero.bind("<Button-1>", toggle_genero)
-
-
 
     # Variables
     cap = cv2.VideoCapture(0)
@@ -170,7 +169,7 @@ def abrir_camara():
             cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
 
             mostrar_mensaje(cam_window, "Foto guardada")
-            winsound.PlaySound("C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/sound/A-modern-camera-shutter-click.wav",
+            winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
                                winsound.SND_FILENAME | winsound.SND_ASYNC)
             
 
@@ -282,13 +281,12 @@ def ver_fotos():
     canvas = tk.Canvas(canvas_frame, bg="#F2F2F2", highlightthickness=0)
     canvas.pack(expand=True, fill="both", padx=20, pady=20)
 
-    fotos = sorted(os.listdir("Galeria"))
-    idx = [0]
+    # Obtener fotos y ordenar cronológicamente
+    fotos = sorted(os.listdir("Galeria"), reverse=True)  # última foto primero
+    idx = [0]  # empezamos en la última foto tomada
     ultimo_tamano = {"w": 0, "h": 0}
 
-    # Mostrar la última foto por defecto al abrir la galería
-    if fotos:
-        idx[0] = len(fotos) - 1
+
 
     def mostrar_imagen():
         w = canvas.winfo_width()
@@ -331,14 +329,20 @@ def ver_fotos():
                 font=("Arial", 20, "bold")
             )
 
+    # Botón Siguiente (ir a fotos más antiguas)
     def siguiente():
-        if fotos:
-            idx[0] = (idx[0] + 1) % len(fotos)
+        if idx[0] < len(fotos) - 1:  # solo si no es la última foto antigua
+            idx[0] += 1
+            ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
             mostrar_imagen()
 
+    # Botón Anterior (ir a fotos más recientes)
     def anterior():
-        if fotos:
-            idx[0] = (idx[0] - 1) % len(fotos)
+        if idx[0] > 0:  # solo si no es la última foto reciente
+            idx[0] -= 1
+            ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
             mostrar_imagen()
 
     def borrar():
@@ -355,6 +359,11 @@ def ver_fotos():
             ultimo_tamano["h"] = 0
 
             mostrar_imagen()
+  
+
+    def actualizar_botones():
+        btn_prev.config(state="normal" if idx[0] > 0 else "disabled")
+        btn_next.config(state="normal" if idx[0] < len(fotos) - 1 else "disabled")
 
 
     # ---------------------- BOTONES INFERIORES ----------------------
@@ -363,6 +372,10 @@ def ver_fotos():
 
     style = ttk.Style(gal_window)
     style.theme_use("clam")
+
+    style = ttk.Style(gal_window)
+    style.theme_use("clam")
+
 
     # ESTILOS PARA BOTONES
     style.configure("BotonAzul.TButton",
@@ -546,7 +559,7 @@ linea.pack(fill="x", padx=90, pady=(0, 10))
 IMG_BASE_W = 319
 IMG_BASE_H = 270
 
-ruta_imagen = "C:/Users/josue/Desktop/Tercero/Proyecto Pis/emociones2/Detecci-n-de-emociones/img/logo_DS.png"
+ruta_imagen = "C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/img/logo_DS.png"
 
 frame_img = tk.Frame(root, bg="#CFEFFF")
 frame_img.pack(pady=10)
