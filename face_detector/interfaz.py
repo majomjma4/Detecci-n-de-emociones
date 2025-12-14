@@ -8,6 +8,7 @@ import winsound
 from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
 from detectar_genero import detectar_genero
+from detectar_edad import detectar_edad
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suprimir mensajes de TensorFlow
 
@@ -67,7 +68,8 @@ def abrir_camara():
 
     # ---------- Abrimos la cámara ----------
     cap = cv2.VideoCapture(0)
-    # Barra lateral derecha
+
+    # Barra lateral derecha GENERO 
     barra_genero = tk.Frame(cam_window, bg="#2B2B2B", width=220)
     barra_genero.pack(side="right", fill="y")
 
@@ -124,6 +126,57 @@ def abrir_camara():
     btn_genero.bind("<Enter>", on_enter)
     btn_genero.bind("<Leave>", on_leave)
 
+    # Barra lateral derecha EDAD 
+
+    titulo_edad = tk.Label(
+        barra_genero,
+        text="DETECTAR EDAD:",
+        bg="#2B2B2B",
+        fg="white",
+        font=("Arial", 12, "bold")
+    )
+    titulo_edad.pack(pady=(25, 15))
+
+    btn_edad = tk.Label(
+        barra_genero,
+        text="DESACTIVADO",
+        bg=color_desactivado,
+        fg="black",
+        font=("Arial", 11, "bold"),
+        width=14,
+        height=2,
+        cursor="hand2"
+    )
+    btn_edad.pack(pady=5)
+
+    detectar_edad_activo = False
+
+    def toggle_edad(event=None):
+        nonlocal detectar_edad_activo
+        detectar_edad_activo = not detectar_edad_activo
+
+        if detectar_edad_activo:
+            btn_edad.config(text="ACTIVADO", bg=color_activado)
+        else:
+            btn_edad.config(text="DESACTIVADO", bg=color_desactivado)
+
+    def on_enter_edad(event):
+        if detectar_edad_activo:
+            btn_edad.config(bg=color_activado_hover)
+        else:
+            btn_edad.config(bg=color_desactivado_hover)
+
+    def on_leave_edad(event):
+        if detectar_edad_activo:
+            btn_edad.config(bg=color_activado)
+        else:
+            btn_edad.config(bg=color_desactivado)
+
+    btn_edad.bind("<Button-1>", toggle_edad)
+    btn_edad.bind("<Enter>", on_enter_edad)
+    btn_edad.bind("<Leave>", on_leave_edad)
+
+
 
     # Canvas central para cámara
     canvas_frame = tk.Frame(cam_window, bg="#1E1E1E")
@@ -169,6 +222,26 @@ def abrir_camara():
                 cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
                 cv2.putText(frame_guardar, emotion_es, (x, y-30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+                
+
+                offset_texto = 25
+
+                if detectar_edad_activo:
+                    try:
+                        edad = detectar_edad(rostro)
+                        cv2.putText(
+                            frame_guardar,
+                            f"Edad: {edad}",
+                            (x, y - 30 + offset_texto),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.8,
+                            (0,255,0), 2
+                        )
+                        offset_texto += 25
+                    except:
+                        pass
+
+
                 if detectar_genero_activo:
                     genero = detectar_genero(rostro)
                     cv2.putText(frame_guardar, genero, (x, y+h_face+25),
@@ -190,18 +263,48 @@ def abrir_camara():
         if ret:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_global = frame_rgb.copy()
+
             # Dibujar caras y emociones
             for (x, y, w_face, h_face) in detectar_caras(frame_rgb):
                 rostro = frame_rgb[y:y+h_face, x:x+w_face]
                 emotion = detectar_emocion(rostro)
                 emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
                 cv2.rectangle(frame_rgb, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
-                cv2.putText(frame_rgb, emotion_es, (x, y-10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+                
+                y_emocion = y - 35
+                y_edad = y - 10
+
+                cv2.putText(
+                    frame_rgb, 
+                    emotion_es, 
+                    (x, y_emocion),
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.9, 
+                    (0,255,0), 2
+                )
+                
+               
+                if detectar_edad_activo:
+                    try:
+                        edad = detectar_edad(rostro)
+                        cv2.putText(
+                            frame_rgb,
+                            f"Edad: {edad}",
+                            (x, y_edad), 
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.75,
+                            (0, 255, 255),
+                            2
+                        )
+                    except:
+                        pass
+
                 if detectar_genero_activo:
                     genero = detectar_genero(rostro)
                     cv2.putText(frame_rgb, genero, (x, y+h_face+25),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+                    
+
             # Escalar proporcionalmente al canvas
             canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
             if canvas_w < 1 or canvas_h < 1:
