@@ -23,6 +23,46 @@ emociones_es = {
     "surprise": "Sorprendido"
 }
 
+# ---------- TEXTO CON FONDO SEMITRANSPARENTE ----------
+def texto_con_fondo(
+    img,
+    texto,
+    x,
+    y,
+    font=cv2.FONT_HERSHEY_SIMPLEX,
+    escala=0.7,
+    grosor=2,
+    color_texto=(255, 255, 255),
+    color_fondo=(0, 0, 0),
+    alpha=0.6,
+    padding=6
+):
+    (w, h), _ = cv2.getTextSize(texto, font, escala, grosor)
+
+    overlay = img.copy()
+
+    cv2.rectangle(
+        overlay,
+        (x - padding, y - h - padding),
+        (x + w + padding, y + padding),
+        color_fondo,
+        -1
+    )
+
+    cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
+
+    cv2.putText(
+        img,
+        texto,
+        (x, y),
+        font,
+        escala,
+        color_texto,
+        grosor,
+        cv2.LINE_AA
+    )
+
+
 if not os.path.exists("Galeria"):
     os.makedirs("Galeria")
 
@@ -34,8 +74,16 @@ def centrar_ventana(win, ancho, alto):
     y = int((screen_h - alto) / 2)
     win.geometry(f"{ancho}x{alto}+{x}+{y}")
 
+
 # ---------- Ventana de cámara ----------
 def abrir_camara():
+
+    frame_count = 0
+
+    ultima_emocion = ""
+    ultima_edad = ""
+    ultimo_genero = ""
+
     global cap 
     cam_window = tk.Toplevel()
     cam_window.title("Cámara - Detección de Emociones")
@@ -68,6 +116,13 @@ def abrir_camara():
 
     # ---------- Abrimos la cámara ----------
     cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("NO SE PUDO ABRIR LA CÁMARA")
+        cam_window.destroy()
+        root.deiconify()
+        return
+
 
     # Barra lateral derecha GENERO 
     barra_genero = tk.Frame(cam_window, bg="#2B2B2B", width=220)
@@ -208,119 +263,187 @@ def abrir_camara():
     btn_foto.tag_bind(icono_id, "<Button-1>", click_btn)
 
     # ---------- Cámara ----------
-    cap = cv2.VideoCapture(0)
     frame_global = None
 
     def tomar_foto():
-        if frame_global is not None:
-            frame_guardar = frame_global.copy()
-            faces = detectar_caras(frame_guardar)
-            for (x, y, w_face, h_face) in faces:
-                rostro = frame_guardar[y:y+h_face, x:x+w_face]
-                emotion = detectar_emocion(rostro)
-                emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
+        if frame_global is None:
+            return
+        
+        frame_guardar = frame_global.copy()
+        faces = detectar_caras(frame_guardar)
+
+        for (x, y, w_face, h_face) in faces:
                 cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
-                cv2.putText(frame_guardar, emotion_es, (x, y-30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
                 
+               
+                # 🔹 Emoción
+        if ultima_emocion:
+            texto_con_fondo(
+                frame_guardar,
+                ultima_emocion,
+                x,
+                y - 40,
+                escala=0.9,
+                color_texto=(255,255,255),
+                color_fondo=(0,0,0),
+                alpha=0.6
+            )
 
-                offset_texto = 25
+                # 🔹 Edad
+        if detectar_edad_activo and ultima_edad != "":
+                texto_con_fondo(
+                frame_guardar,
+                f"Edad: {ultima_edad}",
+                x,
+                y-10,
+                escala=0.75,
+                color_texto=(255,255,255),
+                color_fondo=(0,0,0),
+                alpha=0.6
+            )
+                    
 
-                if detectar_edad_activo:
-                    try:
-                        edad = detectar_edad(rostro)
-                        cv2.putText(
-                            frame_guardar,
-                            f"Edad: {edad}",
-                            (x, y - 30 + offset_texto),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.8,
-                            (0,255,0), 2
-                        )
-                        offset_texto += 25
-                    except:
-                        pass
+                # 🔹 Género
+        if detectar_genero_activo and ultimo_genero:
+                texto_con_fondo(
+                frame_guardar,
+                ultimo_genero,
+                x,
+                y + h_face + 28,
+                escala=0.9,
+                color_texto=(255,255,255),
+                color_fondo=(0,0,0),
+                alpha=0.6
+            )
 
+                    
 
-                if detectar_genero_activo:
-                    genero = detectar_genero(rostro)
-                    cv2.putText(frame_guardar, genero, (x, y+h_face+25),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"Galeria/foto_{timestamp}.png"
-            cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
-            winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
-                            winsound.SND_FILENAME | winsound.SND_ASYNC)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"Galeria/foto_{timestamp}.png"
+        cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
+
+        winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
+                        winsound.SND_FILENAME | winsound.SND_ASYNC)
             
-            # Agregar esta línea para mostrar el mensaje en la parte inferior izquierda
-            mostrar_mensaje(cam_window, "Foto guardada con éxito", 10000)  # Mostrar el mensaje por 10 segundos
+        # Agregar esta línea para mostrar el mensaje en la parte inferior izquierda
+        mostrar_mensaje(cam_window, "Foto guardada con éxito", 3000)  # Mostrar el mensaje por 10 segundos
 
 
     # Mostrar frame adaptativo
+
     def mostrar_frame():
-        nonlocal frame_global
+        if not cam_window.winfo_exists():
+            return  # La ventana ha sido cerrada
+        
+        nonlocal frame_global, frame_count
+        nonlocal ultima_emocion, ultima_edad, ultimo_genero
+
         ret, frame = cap.read()
-        if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_global = frame_rgb.copy()
+        if not ret:
+            canvas.after(30, mostrar_frame)
+            return
 
-            # Dibujar caras y emociones
-            for (x, y, w_face, h_face) in detectar_caras(frame_rgb):
-                rostro = frame_rgb[y:y+h_face, x:x+w_face]
-                emotion = detectar_emocion(rostro)
-                emotion_es = emociones_es.get(str(emotion).lower(), "Desconocido")
-                cv2.rectangle(frame_rgb, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
-                
-                y_emocion = y - 35
-                y_edad = y - 10
+        frame_count += 1
 
-                cv2.putText(
-                    frame_rgb, 
-                    emotion_es, 
-                    (x, y_emocion),
-                    cv2.FONT_HERSHEY_SIMPLEX, 
-                    0.9, 
-                    (0,255,0), 2
-                )
-                
-               
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_global = frame_rgb.copy()
+
+        # Detectar caras
+        for (x, y, w_face, h_face) in detectar_caras(frame_rgb):
+            rostro = frame_rgb[y:y+h_face, x:x+w_face]
+
+            # Detectar SOLO cada 6 frames (anti-lag)
+            if frame_count % 6 == 0:
+                try:
+                    emotion = detectar_emocion(rostro)
+                    ultima_emocion = emociones_es.get(str(emotion).lower(), "Desconocido")
+                except:
+                    pass
+
                 if detectar_edad_activo:
                     try:
-                        edad = detectar_edad(rostro)
-                        cv2.putText(
-                            frame_rgb,
-                            f"Edad: {edad}",
-                            (x, y_edad), 
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.75,
-                            (0, 255, 255),
-                            2
-                        )
+                        ultima_edad = detectar_edad(rostro)
                     except:
                         pass
 
                 if detectar_genero_activo:
-                    genero = detectar_genero(rostro)
-                    cv2.putText(frame_rgb, genero, (x, y+h_face+25),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
-                    
+                    try:
+                        ultimo_genero = detectar_genero(rostro)
+                    except:
+                        pass
 
-            # Escalar proporcionalmente al canvas
-            canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
-            if canvas_w < 1 or canvas_h < 1:
-                cam_window.after(50, mostrar_frame)
-                return
-            frame_h, frame_w = frame_rgb.shape[:2]
-            scale = min(canvas_w/frame_w, canvas_h/frame_h)
-            new_w, new_h = max(1,int(frame_w*scale)), max(1,int(frame_h*scale))
-            frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
-            imgtk = ImageTk.PhotoImage(Image.fromarray(frame_resized))
-            canvas.imgtk = imgtk
-            canvas.delete("all")
-            canvas.create_image(canvas_w//2, canvas_h//2, image=imgtk, anchor="center")
-        canvas.after(10, mostrar_frame)
+            # Rectángulo del rostro
+            cv2.rectangle(
+                frame_rgb,
+                (x, y),
+                (x + w_face, y + h_face),
+                (0, 255, 0),
+                2
+            )
 
-    mostrar_frame()
+            # EMOCIÓN (arriba)
+            if ultima_emocion:
+                texto_con_fondo(
+                    frame_rgb,
+                    ultima_emocion,
+                    x,
+                    y - 42,      # ⬆ un poco más arriba
+                    escala=0.9,
+                    color_texto=(255, 255, 255),
+                    color_fondo=(0, 0, 0),
+                    alpha=0.6
+                )
+
+            # EDAD
+            if detectar_edad_activo and ultima_edad != "":
+                texto_con_fondo(
+                    frame_rgb,
+                    f"Edad: {ultima_edad}",
+                    x,
+                    y - 12,
+                    escala=0.75,
+                    color_texto=(255, 255, 255),
+                    color_fondo=(0, 0, 0),
+                    alpha=0.6
+                )
+
+            # GÉNERO (abajo, 2px más abajo)
+            if detectar_genero_activo and ultimo_genero:
+                texto_con_fondo(
+                    frame_rgb,
+                    ultimo_genero,
+                    x,
+                    y + h_face + 30,
+                    escala=0.9,
+                    color_texto=(255, 255, 255),
+                    color_fondo=(0, 0, 0),
+                    alpha=0.6
+                )
+
+        # Escalar al canvas
+        canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
+        if canvas_w < 1 or canvas_h < 1:
+            cam_window.after(50, mostrar_frame)
+            return
+
+        frame_h, frame_w = frame_rgb.shape[:2]
+        scale = min(canvas_w / frame_w, canvas_h / frame_h)
+        new_w = max(1, int(frame_w * scale))
+        new_h = max(1, int(frame_h * scale))
+
+        frame_resized = cv2.resize(frame_rgb, (new_w, new_h))
+        imgtk = ImageTk.PhotoImage(Image.fromarray(frame_resized))
+
+        canvas.imgtk = imgtk
+        canvas.delete("all")
+        canvas.create_image(
+            canvas_w // 2,
+            canvas_h // 2,
+            image=imgtk,
+            anchor="center"
+        )
+
+        canvas.after(30, mostrar_frame)
 
     def cerrar_camara_total():
         global cap
@@ -332,7 +455,7 @@ def abrir_camara():
 
     cam_window.protocol("WM_DELETE_WINDOW", cerrar_camara_total)
 
-
+    mostrar_frame()
 # ---------------- Galería de fotos ----------------
 def ver_fotos():
     gal_window = tk.Toplevel()
