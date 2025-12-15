@@ -5,75 +5,24 @@ from PIL import Image, ImageTk
 from datetime import datetime
 import os
 import winsound
+from interfaz.botones import crear_boton_redondo, dibujar_boton
 from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
 from detectar_genero import detectar_genero
 from detectar_edad import detectar_edad
+from interfaz.utils_ui import (
+    centrar_ventana,
+    texto_con_fondo,
+    mostrar_mensaje,
+    emociones_es
+)
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suprimir mensajes de TensorFlow
-
-# Diccionario de traducción
-emociones_es = {
-    "anger": "Enojado",
-    "disgust": "Disgustado",
-    "fear": "Asustado",
-    "happiness": "Feliz",
-    "neutral": "Neutral",
-    "sadness": "Triste",
-    "surprise": "Sorprendido"
-}
-
-# ---------- TEXTO CON FONDO SEMITRANSPARENTE ----------
-def texto_con_fondo(
-    img,
-    texto,
-    x,
-    y,
-    font=cv2.FONT_HERSHEY_SIMPLEX,
-    escala=0.7,
-    grosor=2,
-    color_texto=(255, 255, 255),
-    color_fondo=(0, 0, 0),
-    alpha=0.6,
-    padding=6
-):
-    (w, h), _ = cv2.getTextSize(texto, font, escala, grosor)
-
-    overlay = img.copy()
-
-    cv2.rectangle(
-        overlay,
-        (x - padding, y - h - padding),
-        (x + w + padding, y + padding),
-        color_fondo,
-        -1
-    )
-
-    cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
-
-    cv2.putText(
-        img,
-        texto,
-        (x, y),
-        font,
-        escala,
-        color_texto,
-        grosor,
-        cv2.LINE_AA
-    )
 
 
 if not os.path.exists("Galeria"):
     os.makedirs("Galeria")
-
-# ---------- Función centrar ventana ----------
-def centrar_ventana(win, ancho, alto):
-    screen_w = win.winfo_screenwidth()
-    screen_h = win.winfo_screenheight()
-    x = int((screen_w - ancho) / 2)
-    y = int((screen_h - alto) / 2)
-    win.geometry(f"{ancho}x{alto}+{x}+{y}")
-
 
 # ---------- Ventana de cámara ----------
 def abrir_camara():
@@ -649,118 +598,6 @@ def ver_fotos():
     
     gal_window.protocol("WM_DELETE_WINDOW", lambda: root.destroy())
 
-
-
-# ---------- FUNCIONES ----------
-def centrar_ventana(ventana, ancho, alto):
-    screen_width = ventana.winfo_screenwidth()
-    screen_height = ventana.winfo_screenheight()
-    x = (screen_width - ancho) // 2
-    y = (screen_height - alto) // 2
-    ventana.geometry(f"{ancho}x{alto}+{x}+{y}")
-
-def mostrar_mensaje(cam_window, texto, duracion=10000):
-    mensaje = tk.Label(cam_window, text=texto,
-                       bg="#7BC0D9", fg="black",
-                       font=("Arial", 14, "bold"),
-                       bd=2, relief="solid", padx=10, pady=5)
-    
-    mensaje.place(x=10, y=10)  
-
-    def posicionar():
-        # Actualizar dimensiones reales
-        mensaje.update_idletasks()
-        ventana_h = cam_window.winfo_height()
-        label_h = mensaje.winfo_height()
-        mensaje.place(x=10, y=ventana_h - label_h - 10)
-
-    # Llamar a posicionar después de 50 ms
-    cam_window.after(50, posicionar)
-
-    # Destruir después de duracion
-    cam_window.after(duracion, mensaje.destroy)
-
-
-# Aclarar/oscurecer color
-def shade_color(color, factor):
-    color = color.lstrip('#')
-    r = int(color[0:2],16)
-    g = int(color[2:4],16)
-    b = int(color[4:6],16)
-    r = min(int(r*factor),255)
-    g = min(int(g*factor),255)
-    b = min(int(b*factor),255)
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-# ---------- BOTÓN REDONDO ----------
-def crear_boton_redondo(parent, texto, bg_color, fg_color,
-                        hover_color, active_color, comando):
-
-    canvas = tk.Canvas(parent, highlightthickness=0, bg=parent["bg"], bd=0)
-
-    canvas.texto = texto
-    canvas.color_bg = bg_color
-    canvas.color_fg = fg_color
-    canvas.comando = comando
-
-    # 🎨 colores hover / click
-    canvas.hover_bg = hover_color
-    canvas.active_bg = active_color
-
-    # Estado actual
-    canvas.current_bg = bg_color
-
-    # -------- EVENTOS --------
-    def on_enter(e):
-        canvas.current_bg = canvas.hover_bg
-        dibujar_boton(canvas, 1)
-
-    def on_leave(e):
-        canvas.current_bg = canvas.color_bg
-        dibujar_boton(canvas, 1)
-
-    def on_click(e):
-        canvas.current_bg = canvas.active_bg
-        dibujar_boton(canvas, 1)
-        canvas.comando()
-
-    def on_release(e):
-        canvas.current_bg = canvas.hover_bg
-        dibujar_boton(canvas, 1)
-
-    canvas.bind("<Enter>", on_enter)
-    canvas.bind("<Leave>", on_leave)
-    canvas.bind("<Button-1>", on_click)
-    canvas.bind("<ButtonRelease-1>", on_release)
-
-    return canvas
-
-def dibujar_boton(canvas, escala):
-    canvas.delete("all")
-
-    ancho = int(140 * escala)
-    alto = int(50 * escala)
-    radio = int(20 * escala)
-    fuente = int(14 * escala)
-
-    canvas.config(width=ancho, height=alto)
-
-    x0, y0, x1, y1 = 0, 0, ancho, alto
-    color = canvas.current_bg
-
-    canvas.create_rectangle(x0+radio, y0, x1-radio, y1, fill=color, outline="")
-    canvas.create_rectangle(x0, y0+radio, x1, y1-radio, fill=color, outline="")
-    canvas.create_oval(x0, y0, x0+2*radio, y0+2*radio, fill=color, outline="")
-    canvas.create_oval(x1-2*radio, y0, x1, y0+2*radio, fill=color, outline="")
-    canvas.create_oval(x0, y1-2*radio, x0+2*radio, y1, fill=color, outline="")
-    canvas.create_oval(x1-2*radio, y1-2*radio, x1, y1, fill=color, outline="")
-
-    canvas.create_text(ancho//2, alto//2,
-                       text=canvas.texto,
-                       fill=canvas.color_fg,
-                       font=("Arial", fuente, "bold"))
-
-    canvas.bind("<Button-1>", lambda e: canvas.comando())
 
 # ---------- VENTANA ----------
 root = tk.Tk()
