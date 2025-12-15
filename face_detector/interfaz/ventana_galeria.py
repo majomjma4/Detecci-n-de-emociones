@@ -10,6 +10,7 @@ def ver_fotos(root):
     gal_window = tk.Toplevel(root)
     gal_window.title("Galería de Fotos")
 
+    # Tamaño y centrado
     ancho, alto = 900, 650
     centrar_ventana(gal_window, ancho, alto)
     gal_window.configure(bg="white")
@@ -17,6 +18,10 @@ def ver_fotos(root):
     # ---------------------- BARRA SUPERIOR ----------------------
     barra_superior = tk.Frame(gal_window, bg="#003B70", height=60)
     barra_superior.pack(fill="x", side="top")
+
+    def cerrar_galeria():
+        gal_window.destroy()
+        root.deiconify()
 
     btn_regresar = tk.Button(
         barra_superior,
@@ -27,7 +32,7 @@ def ver_fotos(root):
         activebackground="#002F55",
         activeforeground="white",
         bd=0,
-        command=lambda: (gal_window.destroy(), root.deiconify())
+        command=cerrar_galeria
     )
     btn_regresar.pack(side="left", padx=15, pady=10)
 
@@ -59,10 +64,17 @@ def ver_fotos(root):
     canvas = tk.Canvas(canvas_frame, bg="#F2F2F2", highlightthickness=0)
     canvas.pack(expand=True, fill="both", padx=20, pady=20)
 
+    # Crear carpeta si no existe
     if not os.path.exists("Galeria"):
         os.makedirs("Galeria")
 
-    fotos = sorted(os.listdir("Galeria"), reverse=True)
+    # Solo imágenes
+    fotos = sorted(
+        [f for f in os.listdir("Galeria")
+         if f.lower().endswith((".png", ".jpg", ".jpeg"))],
+        reverse=True
+    )
+
     idx = [0]
     ultimo_tamano = {"w": 0, "h": 0}
 
@@ -79,24 +91,34 @@ def ver_fotos(root):
 
         if fotos:
             ruta = os.path.join("Galeria", fotos[idx[0]])
-            img = Image.open(ruta)
+
+            try:
+                img = Image.open(ruta)
+            except Exception:
+                canvas.create_text(
+                    w // 2, h // 2,
+                    text="Error al cargar la imagen",
+                    fill="red",
+                    font=("Arial", 18, "bold")
+                )
+                return
 
             max_w = w - 20
             max_h = h - 20
 
             img_w, img_h = img.size
             ratio = min(max_w / img_w, max_h / img_h)
+
             new_size = (int(img_w * ratio), int(img_h * ratio))
-
             img = img.resize(new_size, Image.LANCZOS)
-            imgtk = ImageTk.PhotoImage(img)
 
+            imgtk = ImageTk.PhotoImage(img)
             canvas.imgtk = imgtk
             canvas.create_image(w // 2, h // 2, image=imgtk)
+
         else:
             canvas.create_text(
-                w // 2,
-                h // 2,
+                w // 2, h // 2,
                 text="No hay fotos guardadas",
                 fill="#003B70",
                 font=("Arial", 20, "bold")
@@ -106,12 +128,14 @@ def ver_fotos(root):
         if idx[0] < len(fotos) - 1:
             idx[0] += 1
             ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
             mostrar_imagen()
 
     def anterior():
         if idx[0] > 0:
             idx[0] -= 1
             ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
             mostrar_imagen()
 
     def borrar():
@@ -124,6 +148,7 @@ def ver_fotos(root):
                 idx[0] = len(fotos) - 1
 
             ultimo_tamano["w"] = 0
+            ultimo_tamano["h"] = 0
             mostrar_imagen()
 
     # ---------------------- BOTONES ----------------------
@@ -133,27 +158,39 @@ def ver_fotos(root):
     style = ttk.Style(gal_window)
     style.theme_use("clam")
 
-    style.configure("BotonAzul.TButton",
-                    background="#319BF1",
-                    font=("Arial", 13, "bold"),
-                    padding=8)
+    style.configure(
+        "BotonAzul.TButton",
+        background="#319BF1",
+        font=("Arial", 13, "bold"),
+        padding=8
+    )
 
-    style.configure("BotonVerde.TButton",
-                    background="#58F389",
-                    font=("Arial", 13, "bold"),
-                    padding=8)
+    style.configure(
+        "BotonVerde.TButton",
+        background="#58F389",
+        font=("Arial", 13, "bold"),
+        padding=8
+    )
 
-    ttk.Button(barra_botones, text="⟵ Anterior",
-               style="BotonAzul.TButton", command=anterior).grid(row=0, column=0, padx=10)
+    ttk.Button(
+        barra_botones, text="⟵ Anterior",
+        style="BotonAzul.TButton",
+        command=anterior
+    ).grid(row=0, column=0, padx=10)
 
-    ttk.Button(barra_botones, text="Siguiente ⟶",
-               style="BotonAzul.TButton", command=siguiente).grid(row=0, column=1, padx=10)
+    ttk.Button(
+        barra_botones, text="Siguiente ⟶",
+        style="BotonAzul.TButton",
+        command=siguiente
+    ).grid(row=0, column=1, padx=10)
 
-    ttk.Button(barra_botones, text="🗑 Borrar Foto",
-               style="BotonVerde.TButton", command=borrar).grid(row=0, column=2, padx=10)
+    ttk.Button(
+        barra_botones, text="🗑 Borrar Foto",
+        style="BotonVerde.TButton",
+        command=borrar
+    ).grid(row=0, column=2, padx=10)
 
     canvas.bind("<Configure>", lambda e: mostrar_imagen())
     gal_window.after(100, mostrar_imagen)
 
-    gal_window.protocol("WM_DELETE_WINDOW", root.destroy)
-
+    gal_window.protocol("WM_DELETE_WINDOW", cerrar_galeria)
