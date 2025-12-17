@@ -8,6 +8,7 @@ from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
 from detectar_genero import detectar_genero
 from detectar_edad import detectar_edad
+from collections import deque, Counter
 
 from interfaz.utils_ui import (
     centrar_ventana,
@@ -16,7 +17,11 @@ from interfaz.utils_ui import (
     emociones_es
 )
 
+
 # ---------- Ventana de cámara ----------
+
+print("🔥 ESTE ES MI ventana_camara.py 🔥")
+
 def abrir_camara(root):
 
     frame_count = 0
@@ -24,6 +29,11 @@ def abrir_camara(root):
     ultima_emocion = ""
     ultima_edad = ""
     ultimo_genero = ""
+
+    hist_genero = [deque(maxlen=20)]
+    hist_edad = [deque(maxlen=20)]
+
+
 
     global cap 
     cam_window = tk.Toplevel()
@@ -99,12 +109,18 @@ def abrir_camara(root):
     color_desactivado_hover = "#FE9AAB"  # rojo más oscuro
 
     def toggle_genero(event=None):
-        nonlocal detectar_genero_activo
+        nonlocal detectar_genero_activo, ultimo_genero
+
         detectar_genero_activo = not detectar_genero_activo
+
+        hist_genero[0].clear()
+        ultimo_genero = ""
+
         if detectar_genero_activo:
             btn_genero.config(text="ACTIVADO", bg=color_activado)
         else:
             btn_genero.config(text="DESACTIVADO", bg=color_desactivado)
+
 
     def on_enter(event):
         if detectar_genero_activo:
@@ -148,13 +164,19 @@ def abrir_camara(root):
     detectar_edad_activo = False
 
     def toggle_edad(event=None):
-        nonlocal detectar_edad_activo
+        nonlocal detectar_edad_activo, ultima_edad
+
         detectar_edad_activo = not detectar_edad_activo
 
+        hist_edad[0].clear()
+        ultima_edad = "Calculando..."
+
         if detectar_edad_activo:
+            
             btn_edad.config(text="ACTIVADO", bg=color_activado)
         else:
             btn_edad.config(text="DESACTIVADO", bg=color_desactivado)
+
 
     def on_enter_edad(event):
         if detectar_edad_activo:
@@ -214,50 +236,50 @@ def abrir_camara(root):
         faces = detectar_caras(frame_guardar)
 
         for (x, y, w_face, h_face) in faces:
-                cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
+            cv2.rectangle(frame_guardar, (x, y), (x+w_face, y+h_face), (0,255,0), 2)
                 
                
                 # 🔹 Emoción
-        if ultima_emocion:
-            texto_con_fondo(
-                frame_guardar,
-                ultima_emocion,
-                x,
-                y - 40,
-                escala=0.9,
-                color_texto=(255,255,255),
-                color_fondo=(0,0,0),
-                alpha=0.6
-            )
-
-                # 🔹 Edad
-        if detectar_edad_activo and ultima_edad != "":
+            if ultima_emocion:
                 texto_con_fondo(
-                frame_guardar,
-                f"Edad: {ultima_edad}",
-                x,
-                y-10,
-                escala=0.75,
-                color_texto=(255,255,255),
-                color_fondo=(0,0,0),
-                alpha=0.6
-            )
-                    
+                    frame_guardar,
+                    ultima_emocion,
+                    x,
+                    y - 40,
+                    escala=0.9,
+                    color_texto=(255,255,255),
+                    color_fondo=(0,0,0),
+                    alpha=0.6
+                )
 
-                # 🔹 Género
-        if detectar_genero_activo and ultimo_genero:
-                texto_con_fondo(
-                frame_guardar,
-                ultimo_genero,
-                x,
-                y + h_face + 28,
-                escala=0.9,
-                color_texto=(255,255,255),
-                color_fondo=(0,0,0),
-                alpha=0.6
-            )
+                    # 🔹 Edad
+            if detectar_edad_activo and ultima_edad != "":
+                    texto_con_fondo(
+                    frame_guardar,
+                    f"Edad: {ultima_edad}",
+                    x,
+                    y-10,
+                    escala=0.75,
+                    color_texto=(255,255,255),
+                    color_fondo=(0,0,0),
+                    alpha=0.6
+                )
+                        
 
-                    
+                    # 🔹 Género
+            if detectar_genero_activo and ultimo_genero:
+                    texto_con_fondo(
+                    frame_guardar,
+                    ultimo_genero,
+                    x,
+                    y + h_face + 28,
+                    escala=0.9,
+                    color_texto=(255,255,255),
+                    color_fondo=(0,0,0),
+                    alpha=0.6
+                )
+
+                        
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"Galeria/foto_{timestamp}.png"
@@ -290,7 +312,16 @@ def abrir_camara(root):
         frame_global = frame_rgb.copy()
 
         # Detectar caras
-        for (x, y, w_face, h_face) in detectar_caras(frame_rgb):
+        caras = detectar_caras(frame_rgb)
+
+        # Si no hay rostro, limpiamos historial (evita saltos raros)
+        if len(caras) == 0:
+            hist_genero[0].clear()
+            hist_edad[0].clear()
+            ultimo_genero = ""
+            ultima_edad = "Sin rostro"
+
+        for (x, y, w_face, h_face) in caras:
             rostro = frame_rgb[y:y+h_face, x:x+w_face]
 
             # Detectar SOLO cada 6 frames (anti-lag)
@@ -303,13 +334,77 @@ def abrir_camara(root):
 
                 if detectar_edad_activo:
                     try:
-                        ultima_edad = detectar_edad(rostro)
-                    except:
-                        pass
+                        edad = detectar_edad(rostro)
+                        print("EDAD RAW =>", edad, type(edad))
+
+                        edad_num = None
+
+                        if isinstance(edad, (int, float)):
+                            edad_num = int(edad)
+
+                        elif isinstance(edad, (list, tuple)) and len(edad) > 0:
+                            if isinstance(edad[0], (int, float)):
+                                edad_num = int(edad[0])
+
+                        elif isinstance(edad, str):
+                            edad = edad.replace("(", "").replace(")", "").strip()
+
+                            if "-" in edad:
+                                partes = edad.split("-")
+                                if partes[0].strip().isdigit():
+                                    edad_num = int(partes[0].strip())
+
+                            elif edad.isdigit():
+                                edad_num = int(edad)
+
+
+                        # ✅ CONDICIÓN CORRECTA
+                        if edad_num is not None and 0 < edad_num < 100:
+                            hist_edad[0].append(edad_num)
+                            print("Edad agregada al historial:", edad_num)
+
+                        if len(hist_edad[0]) >= 4:
+                            promedio = int(sum(hist_edad[0]) / len(hist_edad[0]))
+
+                            if promedio <= 12:
+                                ultima_edad = "8 - 12"
+                            elif promedio <= 19:
+                                ultima_edad = "13 - 19"
+                            elif promedio <= 29:
+                                ultima_edad = "20 - 29"
+                            elif promedio <= 39:
+                                ultima_edad = "30 - 39"
+                            elif promedio <= 49:
+                                ultima_edad = "40 - 49"
+                            else:
+                                ultima_edad = "50+"
+                        else:
+                            ultima_edad = "Calculando..."
+
+                    except Exception as e:
+                        print("ERROR EDAD:", e)
+
 
                 if detectar_genero_activo:
                     try:
-                        ultimo_genero = detectar_genero(rostro)
+                        g = detectar_genero(rostro)
+                        hist_genero[0].append(g)
+
+                        conteo = Counter(hist_genero[0])
+                        total = sum(conteo.values())
+
+                        porcentaje = {
+                            k: int((v / total) * 100)
+                            for k, v in conteo.items()
+                        }
+
+                        # Obtener género con mayor porcentaje
+                        genero_final = max(porcentaje, key=porcentaje.get)
+                        confianza = porcentaje[genero_final]
+
+                        ultimo_genero = f"{genero_final} {confianza}%"
+
+
                     except:
                         pass
 
@@ -336,7 +431,7 @@ def abrir_camara(root):
                 )
 
             # EDAD
-            if detectar_edad_activo and ultima_edad != "":
+            if detectar_edad_activo:
                 texto_con_fondo(
                     frame_rgb,
                     f"Edad: {ultima_edad}",
