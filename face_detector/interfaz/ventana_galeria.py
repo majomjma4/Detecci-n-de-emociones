@@ -5,6 +5,11 @@ import os
 
 from interfaz.utils_ui import centrar_ventana
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GALERIA_DIR = os.path.join(BASE_DIR, "..", "..", "Galeria")
+GALERIA_DIR = os.path.normpath(GALERIA_DIR)
+
+
 
 def ver_fotos(root):
     gal_window = tk.Toplevel(root)
@@ -65,12 +70,12 @@ def ver_fotos(root):
     canvas.pack(expand=True, fill="both", padx=20, pady=20)
 
     # Crear carpeta si no existe
-    if not os.path.exists("Galeria"):
-        os.makedirs("Galeria")
+    if not os.path.exists(GALERIA_DIR):
+        os.makedirs(GALERIA_DIR)
 
     # Solo imágenes
     fotos = sorted(
-        [f for f in os.listdir("Galeria")
+        [f for f in os.listdir(GALERIA_DIR)
          if f.lower().endswith((".png", ".jpg", ".jpeg"))],
         reverse=True
     )
@@ -90,7 +95,7 @@ def ver_fotos(root):
         canvas.delete("all")
 
         if fotos:
-            ruta = os.path.join("Galeria", fotos[idx[0]])
+            ruta = os.path.join(GALERIA_DIR, fotos[idx[0]])
 
             try:
                 img = Image.open(ruta)
@@ -140,7 +145,7 @@ def ver_fotos(root):
 
     def borrar():
         if fotos:
-            ruta = os.path.join("Galeria", fotos[idx[0]])
+            ruta = os.path.join(GALERIA_DIR, fotos[idx[0]])
             os.remove(ruta)
             fotos.pop(idx[0])
 

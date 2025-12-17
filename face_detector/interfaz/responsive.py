@@ -1,3 +1,5 @@
+from PIL import ImageTk
+
 def crear_responsive(root, style, base_w, base_h,
                      img_original=None,
                      label_img=None,
@@ -31,9 +33,7 @@ def crear_responsive(root, style, base_w, base_h,
             new_w = max(50, int(img_base_w * escala))
             new_h = max(50, int(img_base_h * escala))
             img_resized = img_original.resize((new_w, new_h))
-            tk_img = img_resized
-            from PIL import ImageTk
-            tk_img = ImageTk.PhotoImage(tk_img)
+            tk_img = ImageTk.PhotoImage(img_resized)
             label_img.config(image=tk_img)
             label_img.image = tk_img
 

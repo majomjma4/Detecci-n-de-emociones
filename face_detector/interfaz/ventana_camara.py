@@ -3,6 +3,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from datetime import datetime
 import winsound
+import os
 
 from detectar_caras import detectar_caras
 from detectar_emociones import detectar_emocion
@@ -17,10 +18,11 @@ from interfaz.utils_ui import (
     emociones_es
 )
 
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..")
+)
 
 # ---------- Ventana de cámara ----------
-
-print("🔥 ESTE ES MI ventana_camara.py 🔥")
 
 def abrir_camara(root):
 
@@ -207,7 +209,8 @@ def abrir_camara(root):
     barra_inferior.place(relx=0.5, rely=0.95, anchor="s")
 
     # Abrimos y redimensionamos el ícono
-    icono_img = Image.open("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/img/icono_camar.webp").resize((50,50))
+    icono_path = os.path.join(BASE_DIR, "img", "icono_camar.webp")
+    icono_img = Image.open(icono_path).resize((50, 50))
     icono = ImageTk.PhotoImage(icono_img)
 
     # Botón de cámara completamente redondo
@@ -282,11 +285,24 @@ def abrir_camara(root):
                         
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"Galeria/foto_{timestamp}.png"
+        galeria_dir = os.path.join(BASE_DIR, "Galeria")
+        os.makedirs(galeria_dir, exist_ok=True)
+
+        filename = os.path.join(galeria_dir, f"foto_{timestamp}.png")
+
         cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
 
-        winsound.PlaySound("C:/Users/marijo monteros/Desktop/Tercer Semestre/Proyecto Pis/Codigo_Pis/sound/A-modern-camera-shutter-click.wav",
-                        winsound.SND_FILENAME | winsound.SND_ASYNC)
+        sound_path = os.path.join(
+            BASE_DIR,
+            "sound",
+            "A-modern-camera-shutter-click.wav"
+        )
+
+        winsound.PlaySound(
+            sound_path,
+            winsound.SND_FILENAME | winsound.SND_ASYNC
+        )
+
             
         # Agregar esta línea para mostrar el mensaje en la parte inferior izquierda
         mostrar_mensaje(cam_window, "Foto guardada con éxito", 3000)  # Mostrar el mensaje por 10 segundos
@@ -335,8 +351,6 @@ def abrir_camara(root):
                 if detectar_edad_activo:
                     try:
                         edad = detectar_edad(rostro)
-                        print("EDAD RAW =>", edad, type(edad))
-
                         edad_num = None
 
                         if isinstance(edad, (int, float)):
@@ -358,7 +372,7 @@ def abrir_camara(root):
                                 edad_num = int(edad)
 
 
-                        # ✅ CONDICIÓN CORRECTA
+                        # CONDICIÓN CORRECTA
                         if edad_num is not None and 0 < edad_num < 100:
                             hist_edad[0].append(edad_num)
                             print("Edad agregada al historial:", edad_num)

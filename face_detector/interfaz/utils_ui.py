@@ -84,10 +84,13 @@ def mostrar_mensaje(ventana, texto, duracion=3000):
     mensaje.place(x=10, y=10)
 
     def posicionar():
+        if not ventana.winfo_exists():
+            return
         mensaje.update_idletasks()
         ventana_h = ventana.winfo_height()
         label_h = mensaje.winfo_height()
         mensaje.place(x=10, y=ventana_h - label_h - 10)
+
 
     ventana.after(50, posicionar)
     ventana.after(duracion, mensaje.destroy)

@@ -1,12 +1,19 @@
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+import os 
 
 from interfaz.utils_ui import centrar_ventana
 from interfaz.botones import crear_boton_redondo, dibujar_boton
 from interfaz.ventana_camara import abrir_camara
 from interfaz.ventana_galeria import ver_fotos
 from interfaz.responsive import crear_responsive
+
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+)
 
 
 def iniciar_app():
@@ -39,14 +46,16 @@ def iniciar_app():
     # ---------- IMAGEN ----------
     IMG_BASE_W = 319
     IMG_BASE_H = 270
-    ruta_imagen = "img/logo_DS.png"
+    ruta_imagen = os.path.join(BASE_DIR, "img", "logo_DS.png")
+
 
     frame_img = tk.Frame(root, bg="#CFEFFF")
     frame_img.pack(pady=10)
 
     try:
         img_original = Image.open(ruta_imagen)
-    except:
+    except Exception as e:
+        print(f"Error al cargar la imagen:", e)
         img_original = None
 
     label_img = tk.Label(frame_img, bg="#CFEFFF")
@@ -61,7 +70,7 @@ def iniciar_app():
     frame_botones.pack(pady=20)
 
     btn_iniciar = crear_boton_redondo(
-        frame_botones, "INICIAR",
+        frame_botones, "CÁMARA",
         "#69E991", "black", "#97E0AE", "#69B4F1",
         lambda: (root.withdraw(), abrir_camara(root))
     )

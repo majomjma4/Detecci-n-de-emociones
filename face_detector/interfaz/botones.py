@@ -29,11 +29,11 @@ def crear_boton_redondo(parent, texto, bg_color, fg_color,
     def on_click(e):
         canvas.current_bg = canvas.active_bg
         dibujar_boton(canvas, 1)
-        canvas.comando()
 
     def on_release(e):
         canvas.current_bg = canvas.hover_bg
         dibujar_boton(canvas, 1)
+        canvas.comando()
 
     canvas.bind("<Enter>", on_enter)
     canvas.bind("<Leave>", on_leave)
@@ -71,4 +71,3 @@ def dibujar_boton(canvas, escala):
         font=("Arial", fuente, "bold")
     )
 
-    canvas.bind("<Button-1>", lambda e: canvas.comando())
