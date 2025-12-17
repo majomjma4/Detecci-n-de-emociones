@@ -375,8 +375,7 @@ def abrir_camara(root):
                         # CONDICIÓN CORRECTA
                         if edad_num is not None and 0 < edad_num < 100:
                             hist_edad[0].append(edad_num)
-                            print("Edad agregada al historial:", edad_num)
-
+    
                         if len(hist_edad[0]) >= 4:
                             promedio = int(sum(hist_edad[0]) / len(hist_edad[0]))
 
