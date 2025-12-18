@@ -258,18 +258,18 @@ def abrir_camara(root):
                     # 🔹 Edad
             if detectar_edad_activo and ultima_edad != "":
                     texto_con_fondo(
-                    frame_guardar,
-                    f"Edad: {ultima_edad}",
-                    x,
-                    y-10,
-                    escala=0.75,
-                    color_texto=(255,255,255),
-                    color_fondo=(0,0,0),
-                    alpha=0.6
+                        frame_guardar,
+                        f"Edad: {ultima_edad}",
+                        x,
+                        y-10,
+                        escala=0.75,
+                        color_texto=(255,255,255),
+                        color_fondo=(0,0,0),
+                        alpha=0.6
                 )
                         
 
-                    # 🔹 Género
+            """       # 🔹 Género
             if detectar_genero_activo and ultimo_genero:
                     texto_con_fondo(
                     frame_guardar,
@@ -280,9 +280,9 @@ def abrir_camara(root):
                     color_texto=(255,255,255),
                     color_fondo=(0,0,0),
                     alpha=0.6
-                )
+                )"""
 
-                        
+                             
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         galeria_dir = os.path.join(BASE_DIR, "Galeria")
@@ -290,7 +290,34 @@ def abrir_camara(root):
 
         filename = os.path.join(galeria_dir, f"foto_{timestamp}.png")
 
+        
+                # Dibuja panel de género en la foto
+        if detectar_genero_activo and len(hist_genero[0]) > 0:
+            conteo = Counter(hist_genero[0])
+            total = sum(conteo.values())
+            porcentaje = {k: int((v / total) * 100) for k, v in conteo.items()}
+
+            x_panel = 15
+            y_panel = 28
+            espacio = 28
+
+            for i, (genero, pct) in enumerate(porcentaje.items()):
+                offset = 15 if i == 1 else 0
+                texto_con_fondo(
+                    frame_guardar,
+                    f"{genero}: {pct}%",
+                    x_panel,
+                    y_panel + i * espacio + offset,
+                    escala=0.9,
+                    color_texto=(255, 255, 255),
+                    color_fondo=(0, 0, 0),
+                    alpha=0.6
+                )
+
+        # Guardar la foto
         cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
+
+
 
         sound_path = os.path.join(
             BASE_DIR,
@@ -455,7 +482,7 @@ def abrir_camara(root):
                     color_fondo=(0, 0, 0),
                     alpha=0.6
                 )
-
+            """
             # GÉNERO (abajo, 2px más abajo)
             if detectar_genero_activo and ultimo_genero:
                 texto_con_fondo(
@@ -467,7 +494,36 @@ def abrir_camara(root):
                     color_texto=(255, 255, 255),
                     color_fondo=(0, 0, 0),
                     alpha=0.6
+                )"""
+
+        # ---------- PANEL DE GÉNERO (ESQUINA SUPERIOR) ----------
+        if detectar_genero_activo and len(hist_genero[0]) > 0:
+            conteo = Counter(hist_genero[0])
+            total = sum(conteo.values())
+
+            porcentaje = {
+                k: int((v / total) * 100)
+                for k, v in conteo.items()
+            }
+
+            x_panel = 15
+            y_panel = 28
+            espacio = 28
+
+            for i, (genero, pct) in enumerate(porcentaje.items()):
+                offset = 15 if i == 1 else 0
+                texto_con_fondo(
+                    frame_rgb,
+                    f"{genero}: {pct}%",
+                    x_panel,
+                    y_panel + i * espacio + offset,
+                    escala=0.9,
+                    color_texto=(255,255,255),
+                    color_fondo=(0,0,0),
+                    alpha=0.6
                 )
+
+
 
         # Escalar al canvas
         canvas_w, canvas_h = canvas.winfo_width(), canvas.winfo_height()
