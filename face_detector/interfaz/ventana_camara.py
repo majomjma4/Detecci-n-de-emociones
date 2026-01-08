@@ -67,8 +67,37 @@ def abrir_camara(root):
     )
     btn_regresar.pack(side="left", padx=10, pady=5)
 
+    # --------------- Cambiar cámara ----------------
+
+    def cambiar_camara():
+        nonlocal cam_index
+        global cap
+
+        # cerrar cámara actual
+        if cap is not None and cap.isOpened():
+            cap.release()
+
+        # probar siguiente cámara
+        cam_index += 1
+        nueva = cv2.VideoCapture(cam_index)
+
+        # si no existe, volver a 0
+        if not nueva.isOpened():
+            cam_index = 0
+            nueva = cv2.VideoCapture(cam_index)
+
+        cap = nueva
+
+         # 🔹 Actualizar texto del botón
+        if cam_index == 0:
+            btn_cambiar_camara.config(text="CÁMARA\nPC")
+        else:
+            btn_cambiar_camara.config(text=f"CÁMARA\n{cam_index}")
+
     # ---------- Abrimos la cámara ----------
-    cap = cv2.VideoCapture(0)
+    cam_index = 0
+
+    cap = cv2.VideoCapture(cam_index)
 
     if not cap.isOpened():
         print("NO SE PUDO ABRIR LA CÁMARA")
@@ -196,7 +225,20 @@ def abrir_camara(root):
     btn_edad.bind("<Enter>", on_enter_edad)
     btn_edad.bind("<Leave>", on_leave_edad)
 
+        # ---------- BOTÓN CAMBIAR CÁMARA ----------
+    btn_cambiar_camara = tk.Label(
+        barra_genero,
+        text="CAMBIAR\nCÁMARA",
+        bg="#444444",
+        fg="white",
+        font=("Arial", 11, "bold"),
+        width=14,
+        height=3,
+        cursor="hand2"
+    )
+    btn_cambiar_camara.pack(side="bottom", pady=20)
 
+    btn_cambiar_camara.bind("<Button-1>", lambda e: cambiar_camara())
 
     # Canvas central para cámara
     canvas_frame = tk.Frame(cam_window, bg="#1E1E1E")
@@ -343,7 +385,11 @@ def abrir_camara(root):
         
         nonlocal frame_global, frame_count
         nonlocal ultima_emocion, ultima_edad, ultimo_genero
-
+        
+        if cap is None or not cap.isOpened():
+            canvas.after(30, mostrar_frame)
+            return 
+        
         ret, frame = cap.read()
         if not ret:
             canvas.after(30, mostrar_frame)
