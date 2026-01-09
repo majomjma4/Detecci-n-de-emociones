@@ -255,7 +255,7 @@ def abrir_camara(root):
     icono_img = Image.open(icono_path).resize((50, 50))
     icono = ImageTk.PhotoImage(icono_img)
 
-    # Botón de cámara completamente redondo
+    # Botón de cámara 
     btn_size = 80
     circulo_size = 70
     btn_foto = tk.Canvas(barra_inferior, width=btn_size, height=btn_size, bg="#1E1E1E", highlightthickness=0)
@@ -311,7 +311,7 @@ def abrir_camara(root):
                 )
                         
 
-            """       # 🔹 Género
+                # 🔹 Género
             if detectar_genero_activo and ultimo_genero:
                     texto_con_fondo(
                     frame_guardar,
@@ -322,7 +322,7 @@ def abrir_camara(root):
                     color_texto=(255,255,255),
                     color_fondo=(0,0,0),
                     alpha=0.6
-                )"""
+                )
 
                              
 
@@ -333,7 +333,7 @@ def abrir_camara(root):
         filename = os.path.join(galeria_dir, f"foto_{timestamp}.png")
 
         
-                # Dibuja panel de género en la foto
+        """        # Dibuja panel de género en la foto
         if detectar_genero_activo and len(hist_genero[0]) > 0:
             conteo = Counter(hist_genero[0])
             total = sum(conteo.values())
@@ -354,7 +354,7 @@ def abrir_camara(root):
                     color_texto=(255, 255, 255),
                     color_fondo=(0, 0, 0),
                     alpha=0.6
-                )
+                ) """
 
         # Guardar la foto
         cv2.imwrite(filename, cv2.cvtColor(frame_guardar, cv2.COLOR_RGB2BGR))
@@ -528,8 +528,9 @@ def abrir_camara(root):
                     color_fondo=(0, 0, 0),
                     alpha=0.6
                 )
-            """
-            # GÉNERO (abajo, 2px más abajo)
+            
+            
+            # GÉNERO 
             if detectar_genero_activo and ultimo_genero:
                 texto_con_fondo(
                     frame_rgb,
@@ -540,9 +541,9 @@ def abrir_camara(root):
                     color_texto=(255, 255, 255),
                     color_fondo=(0, 0, 0),
                     alpha=0.6
-                )"""
+                )
 
-        # ---------- PANEL DE GÉNERO (ESQUINA SUPERIOR) ----------
+        """# ---------- PANEL DE GÉNERO (ESQUINA SUPERIOR) ----------
         if detectar_genero_activo and len(hist_genero[0]) > 0:
             conteo = Counter(hist_genero[0])
             total = sum(conteo.values())
@@ -567,7 +568,7 @@ def abrir_camara(root):
                     color_texto=(255,255,255),
                     color_fondo=(0,0,0),
                     alpha=0.6
-                )
+                )"""
 
 
 
